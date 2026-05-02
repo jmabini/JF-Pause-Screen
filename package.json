@@ -1,0 +1,14 @@
+{
+  "name": "jf-custom-pause-screen",
+  "version": "3.7.1",
+  "description": "Custom Pause Screen for Jellyfin",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "terser": "^5.46.1",
+    "vite": "^5.0.0"
+  }
+}

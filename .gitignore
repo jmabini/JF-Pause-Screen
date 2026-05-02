@@ -1,0 +1,23 @@
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+node_modules/
+logs/
+*.log
+.agents/
+
+.env
+.env.*
+.npmrc
+
+dist/*.map
+
+# Optional: keep only if you want old versions and source art public
+Archive/
+ASSETS/*.psd
