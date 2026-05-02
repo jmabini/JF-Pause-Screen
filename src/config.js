@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.10.5',
+  version: '3.10.6',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -58,21 +58,23 @@ export const CONFIG = {
   discSpinSeconds: 60,            // Duration (s) for a full 360 degree rotation
   blobCacheMaxSize: 20,           // Max number of processed images to keep in memory
 
-  // PAUSED BADGE
+  // PAUSED BADGE — Figma Glass mapping
+  // Light: -45° / 80% · Refraction: 100 · Depth: 14 · Dispersion: 55 · Frost: 5 · Splay: 83
   pauseBadge: {
-    glassMode: 'balanced',         // 'low' = cheaper static dark glass, 'balanced' = richer dark liquid glass
-    blurPx: 18,                   // Dynamic backdrop blur inside the liquid glass badge
-    edgeBlurPx: 10,               // Extra live backdrop filtering on the rim to make edges feel glassy
-    exposureReduction: 0.16,       // Slight darkening over the live blur for PAUSED legibility
-    edgeHighlightOpacity: 0.46,    // Bright rim/edge visibility for the 3D glass shape
-    rimLightOpacity: 0.62,         // Top/left rim light that follows the badge shape
-    edgeGlowOpacity: 0.24,         // Bottom/right soft light that gives the badge cylindrical depth
-    innerShadowOpacity: 0.16,      // Inner edge depth that makes the badge feel thicker
-    surfaceSheenOpacity: 0.14,     // Soft top/sweep highlight across the glass surface
-    refractionOpacity: 0.28,       // Subtle edge distortion illusion; set 0 for lowest visual cost
-    fontOpacity: 0.60,             // Opacity of the PAUSED label inside the glass badge
-    trackingEm: 0.01,              // +10 tracking for the PAUSED label
-    landscapeWidthPctOfDisc: 52,  // Landscape badge width as a % of the disc/right art area
+    frostBlurPx: 2,               // Frost: 5 → nearly clear glass (low blur)
+    exposureReduction: 0.06,      // Minimal darkening to preserve glass clarity
+    lightAngleDeg: 135,           // Light: -45° → 135deg CSS gradient direction (upper-left source)
+    lightIntensity: 0.80,         // Light: 80% → highlight peak opacity
+    refractionStrength: 1.0,      // Refraction: 100 → SVG displacement map scale (0.0–1.0)
+    depthPx: 14,                  // Depth: 14 → inset shadow spread for 3D edge
+    dispersionPx: 1.0,            // Dispersion: 55 → chromatic fringe offset in px
+    dispersionOpacity: 0.18,      // Chromatic fringe layer visibility
+    splayPct: 83,                 // Splay: 83 → % of badge surface covered by highlight sweep
+    fontOpacity: 0.55,            // PAUSED label opacity (slightly lower for clear-glass look)
+    trackingEm: 0.15,             // Letter-spacing (wider to match Figma layout)
+    fontWeight: 400,              // Font weight (lighter for glass aesthetic)
+    landscapeTopPct: 62,          // Badge vertical position: % from top of .ps-right
+    landscapeWidthPctOfDisc: 46,  // Landscape badge width as a % of the disc/right art area
     portraitPhoneWidthPct: 42,    // Phone portrait badge width as a % of viewport width
     portraitTabletWidthPct: 28,   // Tablet portrait badge width as a % of viewport width
   },

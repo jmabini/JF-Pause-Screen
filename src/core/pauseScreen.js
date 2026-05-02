@@ -261,9 +261,10 @@ export function initPauseScreen(bootObserver) {
 
   function syncPauseBadgeSizing() {
     const badgeConfig = CONFIG.pauseBadge || {};
-    const landscapeWidthPct = badgeConfig.landscapeWidthPctOfDisc || 52;
+    const landscapeWidthPct = badgeConfig.landscapeWidthPctOfDisc || 46;
     const portraitPhoneWidthPct = badgeConfig.portraitPhoneWidthPct || 42;
     const portraitTabletWidthPct = badgeConfig.portraitTabletWidthPct || 28;
+    const landscapeTopPct = badgeConfig.landscapeTopPct || 62;
     const rightWidth = rightCol.getBoundingClientRect().width || 0;
     const landscapeWidth = rightWidth * landscapeWidthPct / 100;
     const portraitWidthPct = isPhonePortrait() ? portraitPhoneWidthPct : portraitTabletWidthPct;
@@ -271,6 +272,7 @@ export function initPauseScreen(bootObserver) {
 
     overlay.style.setProperty('--pause-badge-landscape-width', `${Math.max(0, landscapeWidth)}px`);
     overlay.style.setProperty('--pause-badge-portrait-width', `${Math.max(0, portraitWidth)}px`);
+    overlay.style.setProperty('--pause-badge-top', `${landscapeTopPct}%`);
   }
 
   function parsePx(val) { const n = parseFloat(val); return isNaN(n) ? 20 : (String(val).trim().endsWith('vw') ? n * window.innerWidth / 100 : n); }

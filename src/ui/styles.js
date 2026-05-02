@@ -19,17 +19,20 @@ import { CONFIG } from '../config.js';
 export function getStyles() {
   const F = CONFIG.fonts, M = CONFIG.margins, LC = CONFIG.landscapeColumns, PB = CONFIG.pauseBadge || {};
   const TS = `text-shadow: ${CONFIG.enableTextShadow ? CONFIG.textShadowDefinition : 'none'};`;
-  const badgeBlurPx = Number.isFinite(PB.blurPx) ? PB.blurPx : 18;
-  const badgeEdgeBlurPx = Number.isFinite(PB.edgeBlurPx) ? PB.edgeBlurPx : Math.max(6, badgeBlurPx * 0.55);
-  const badgeExposureReduction = Number.isFinite(PB.exposureReduction) ? PB.exposureReduction : 0.16;
-  const badgeEdgeHighlightOpacity = Number.isFinite(PB.edgeHighlightOpacity) ? PB.edgeHighlightOpacity : 0.42;
-  const badgeRimLightOpacity = Number.isFinite(PB.rimLightOpacity) ? PB.rimLightOpacity : 0.62;
-  const badgeEdgeGlowOpacity = Number.isFinite(PB.edgeGlowOpacity) ? PB.edgeGlowOpacity : 0.24;
-  const badgeInnerShadowOpacity = Number.isFinite(PB.innerShadowOpacity) ? PB.innerShadowOpacity : 0.46;
-  const badgeSurfaceSheenOpacity = Number.isFinite(PB.surfaceSheenOpacity) ? PB.surfaceSheenOpacity : 0.16;
-  const badgeRefractionOpacity = Number.isFinite(PB.refractionOpacity) ? PB.refractionOpacity : 0.22;
-  const badgeFontOpacity = Number.isFinite(PB.fontOpacity) ? PB.fontOpacity : 0.85;
-  const badgeTrackingEm = Number.isFinite(PB.trackingEm) ? PB.trackingEm : 0.01;
+  // --- Figma Glass parameters ---
+  const frost = Number.isFinite(PB.frostBlurPx) ? PB.frostBlurPx : 2;
+  const exposure = Number.isFinite(PB.exposureReduction) ? PB.exposureReduction : 0.06;
+  const lightAngle = Number.isFinite(PB.lightAngleDeg) ? PB.lightAngleDeg : 135;
+  const lightInt = Number.isFinite(PB.lightIntensity) ? PB.lightIntensity : 0.80;
+  const depth = Number.isFinite(PB.depthPx) ? PB.depthPx : 14;
+  const dispPx = Number.isFinite(PB.dispersionPx) ? PB.dispersionPx : 1.0;
+  const dispOp = Number.isFinite(PB.dispersionOpacity) ? PB.dispersionOpacity : 0.18;
+  const splay = Number.isFinite(PB.splayPct) ? PB.splayPct : 83;
+  const fontOp = Number.isFinite(PB.fontOpacity) ? PB.fontOpacity : 0.55;
+  const tracking = Number.isFinite(PB.trackingEm) ? PB.trackingEm : 0.15;
+  const fontWt = Number.isFinite(PB.fontWeight) ? PB.fontWeight : 400;
+  const splayStop = Math.min(100, splay);
+  const lightFadeStop = Math.max(0, splayStop - 20);
 
   return `
   @keyframes ps-spin-ls { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -62,16 +65,12 @@ export function getStyles() {
   
   #pause-overlay .ps-disc { display: none; width: 100%; max-height: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 50%; animation: ps-spin-ls var(--disc-spin-speed, 60s) linear infinite; filter: brightness(0.85) drop-shadow(0 8px 16px rgba(0,0,0,0.4)) drop-shadow(0 0 80px var(--theme-glow-raw, transparent)); transition: filter 2s ease; }
   @media (orientation: landscape) { #pause-overlay .ps-disc { display: block; } } @media (orientation: portrait) { #pause-overlay .ps-disc { display: none !important; } }
-  #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${badgeFontOpacity}); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; line-height: 1; letter-spacing: ${badgeTrackingEm}em; text-transform: uppercase; background: rgba(0,0,0,${badgeExposureReduction}); border: 1px solid rgba(255,255,255,${badgeEdgeHighlightOpacity * 0.42}); box-shadow: inset 0 1px 1.5px rgba(255,255,255,${badgeEdgeHighlightOpacity * 0.34}), inset -4px -5px 12px rgba(255,255,255,${badgeEdgeGlowOpacity * 0.54}), inset 3px 4px 12px rgba(0,0,0,${badgeInnerShadowOpacity * 0.5}), 0 12px 30px rgba(0,0,0,0.30); -webkit-backdrop-filter: blur(${badgeBlurPx}px) saturate(125%) contrast(1.08) brightness(0.84); backdrop-filter: blur(${badgeBlurPx}px) saturate(125%) contrast(1.08) brightness(0.84); }
-  #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${badgeFontOpacity}); text-shadow: 0 1px 2px rgba(0,0,0,0.58), 0 0 6px rgba(0,0,0,0.32); }
-  #pause-overlay .ps-paused-badge::before { content: ""; position: absolute; inset: 0; z-index: 1; box-sizing: border-box; padding: 1.5px; border-radius: inherit; pointer-events: none; background: linear-gradient(135deg, rgba(255,255,255,${badgeRimLightOpacity}) 0%, rgba(255,255,255,${badgeRimLightOpacity * 0.7}) 18%, transparent 42%, transparent 72%, rgba(255,255,255,${badgeEdgeGlowOpacity * 0.42}) 100%); -webkit-backdrop-filter: blur(${badgeEdgeBlurPx}px) saturate(142%) contrast(1.16) brightness(0.94); backdrop-filter: blur(${badgeEdgeBlurPx}px) saturate(142%) contrast(1.16) brightness(0.94); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: ${Math.min(1, Math.max(0, badgeRefractionOpacity + 0.36))}; }
-  #pause-overlay .ps-paused-badge::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at 86% 88%, rgba(255,255,255,${badgeEdgeGlowOpacity}) 0%, rgba(255,255,255,${badgeEdgeGlowOpacity * 0.48}) 30%, transparent 66%), radial-gradient(ellipse at 100% 58%, rgba(255,255,255,${badgeEdgeGlowOpacity * 0.68}) 0%, transparent 58%), linear-gradient(180deg, rgba(255,255,255,${badgeSurfaceSheenOpacity * 0.32}) 0%, transparent 46%, rgba(255,255,255,${badgeEdgeGlowOpacity * 0.22}) 100%); mix-blend-mode: screen; opacity: ${Math.min(1, Math.max(0, badgeEdgeGlowOpacity + 0.14))}; }
-  #pause-overlay .ps-paused-badge-glass-balanced { transform-style: preserve-3d; }
-  #pause-overlay .ps-paused-badge-glass-low { background: rgba(0,0,0,${Math.min(0.24, badgeExposureReduction + 0.04)}); box-shadow: inset 0 1px 1px rgba(255,255,255,0.24), inset 0 -1px 1px rgba(0,0,0,0.16), 0 10px 26px rgba(0,0,0,0.24); -webkit-backdrop-filter: blur(${Math.max(8, badgeBlurPx * 0.65)}px) saturate(112%) brightness(0.84); backdrop-filter: blur(${Math.max(8, badgeBlurPx * 0.65)}px) saturate(112%) brightness(0.84); }
-  #pause-overlay .ps-paused-badge-glass-low::before { opacity: 0.36; }
-  #pause-overlay .ps-paused-badge-glass-low::after { display: none; }
-  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pause-overlay .ps-paused-badge { background: rgba(12,15,18,0.82); } }
-  #pause-overlay .ps-paused-badge-landscape { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(var(--pause-badge-landscape-width, 280px), 100%); max-width: 100%; aspect-ratio: 3.45 / 1; height: auto; padding: 0 1.1em; font-size: clamp(24px, 2.05vw, 68px); }
+  #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${fontOp}); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: ${fontWt}; line-height: 1; letter-spacing: ${tracking}em; text-transform: uppercase; background: rgba(0,0,0,${exposure}); border: 1px solid rgba(255,255,255,${lightInt * 0.18}); box-shadow: inset 0 1px 0.5px rgba(255,255,255,${lightInt * 0.22}), inset 0 -1px ${depth * 0.15}px rgba(0,0,0,${depth * 0.012}), 0 4px 16px rgba(0,0,0,0.18); -webkit-backdrop-filter: blur(${frost}px) saturate(110%); backdrop-filter: blur(${frost}px) saturate(110%); filter: url(#ps-glass-refraction); }
+  #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${fontOp}); text-shadow: 0 1px 3px rgba(0,0,0,0.42), 0 0 8px rgba(0,0,0,0.18); }
+  #pause-overlay .ps-paused-badge::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; background: linear-gradient(${lightAngle}deg, rgba(255,255,255,${lightInt}) 0%, rgba(255,255,255,${lightInt * 0.5}) ${lightFadeStop}%, transparent ${splayStop}%); mix-blend-mode: overlay; opacity: 0.7; }
+  #pause-overlay .ps-paused-badge::after { content: ""; position: absolute; inset: -${dispPx}px; z-index: 2; border-radius: inherit; pointer-events: none; background: linear-gradient(${lightAngle + 90}deg, rgba(255,80,80,${dispOp}) 0%, transparent 30%, transparent 70%, rgba(80,200,255,${dispOp}) 100%); mix-blend-mode: screen; opacity: ${dispOp}; }
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pause-overlay .ps-paused-badge { background: rgba(12,15,18,0.72); filter: none; } }
+  #pause-overlay .ps-paused-badge-landscape { left: 50%; top: var(--pause-badge-top, 62%); transform: translate(-50%, -50%); width: min(var(--pause-badge-landscape-width, 280px), 100%); max-width: 100%; aspect-ratio: 3.45 / 1; height: auto; padding: 0 1.1em; font-size: clamp(24px, 2.05vw, 68px); }
   #pause-overlay .ps-paused-badge-portrait { left: 50%; bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(var(--pause-badge-portrait-width, 260px), calc(100vw - 32px)); max-width: calc(100vw - 32px); aspect-ratio: 3.35 / 1; height: auto; padding: 0 0.95em; font-size: clamp(28px, 3vw, 52px); }
   @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(12dvh + env(safe-area-inset-bottom, 0px)); } }
   @media (orientation: landscape) { #pause-overlay .ps-paused-badge-landscape { display: flex; } #pause-overlay .ps-paused-badge-portrait { display: none !important; } }
