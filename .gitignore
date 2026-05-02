@@ -20,4 +20,4 @@ dist/*.map
 
 # Optional: keep only if you want old versions and source art public
 Archive/
-ASSETS/*.psd
+ASSETS/
