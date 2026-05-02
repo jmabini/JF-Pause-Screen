@@ -16,6 +16,8 @@ logs/
 .env.*
 .npmrc
 
+PROJECT_CONTEXT.md
+
 dist/*.map
 
 # Optional: keep only if you want old versions and source art public

@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.8.0',
+  version: '3.10.1',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -57,6 +57,20 @@ export const CONFIG = {
   // DISC IMAGE & CACHE
   discSpinSeconds: 60,            // Duration (s) for a full 360 degree rotation
   blobCacheMaxSize: 20,           // Max number of processed images to keep in memory
+
+  // PAUSED BADGE
+  pauseBadge: {
+    glassMode: 'balanced',         // 'low' = cheaper static dark glass, 'balanced' = richer dark liquid glass
+    blurPx: 18,                   // Backdrop blur inside the liquid glass badge
+    darkTintOpacity: 0.58,         // Darkness of the glass body (0.0 = clear, 1.0 = black)
+    edgeHighlightOpacity: 0.42,    // Bright rim/edge visibility for the 3D glass shape
+    innerShadowOpacity: 0.46,      // Inner dark edge depth that makes the badge feel thicker
+    surfaceSheenOpacity: 0.16,     // Soft top/sweep highlight across the glass surface
+    refractionOpacity: 0.22,       // Subtle edge distortion illusion; set 0 for lowest visual cost
+    landscapeWidthPctOfDisc: 52,  // Landscape badge width as a % of the disc/right art area
+    portraitPhoneWidthPct: 42,    // Phone portrait badge width as a % of viewport width
+    portraitTabletWidthPct: 28,   // Tablet portrait badge width as a % of viewport width
+  },
 
   // LAYOUT
   genresMaxPhonePortrait: 1,      // Max genres shown on small mobile screens

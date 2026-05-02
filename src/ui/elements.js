@@ -2,6 +2,7 @@ import { CONFIG } from '../config.js';
 
 export function createOverlay() {
   const overlay = document.createElement('div');
+  const pauseBadgeMode = CONFIG.pauseBadge?.glassMode === 'low' ? 'low' : 'balanced';
   overlay.id = 'pause-overlay';
   overlay.style.cssText = `display: none; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; opacity: 0; touch-action: manipulation;`;
   overlay.style.setProperty('transition', 'opacity 0.35s ease', 'important');
@@ -28,8 +29,10 @@ export function createOverlay() {
       </div>
       <div class="ps-right">
         <img class="ps-disc" data-has-disc="false" />
+        <div class="ps-paused-badge ps-paused-badge-landscape ps-paused-badge-glass-${pauseBadgeMode}" aria-hidden="true"><span class="ps-paused-badge-text">PAUSED</span></div>
       </div>
     </div>
+    <div class="ps-paused-badge ps-paused-badge-portrait ps-paused-badge-glass-${pauseBadgeMode}" aria-hidden="true"><span class="ps-paused-badge-text">PAUSED</span></div>
     <div class="ps-progress-wrap">
       <div class="ps-progress-track"><div class="ps-progress-fill"></div><div class="ps-chapter-ticks"></div></div>
       <div class="ps-progress-meta">
