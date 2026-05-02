@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.10.1',
+  version: '3.10.5',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -61,12 +61,17 @@ export const CONFIG = {
   // PAUSED BADGE
   pauseBadge: {
     glassMode: 'balanced',         // 'low' = cheaper static dark glass, 'balanced' = richer dark liquid glass
-    blurPx: 18,                   // Backdrop blur inside the liquid glass badge
-    darkTintOpacity: 0.58,         // Darkness of the glass body (0.0 = clear, 1.0 = black)
-    edgeHighlightOpacity: 0.42,    // Bright rim/edge visibility for the 3D glass shape
-    innerShadowOpacity: 0.46,      // Inner dark edge depth that makes the badge feel thicker
-    surfaceSheenOpacity: 0.16,     // Soft top/sweep highlight across the glass surface
-    refractionOpacity: 0.22,       // Subtle edge distortion illusion; set 0 for lowest visual cost
+    blurPx: 18,                   // Dynamic backdrop blur inside the liquid glass badge
+    edgeBlurPx: 10,               // Extra live backdrop filtering on the rim to make edges feel glassy
+    exposureReduction: 0.16,       // Slight darkening over the live blur for PAUSED legibility
+    edgeHighlightOpacity: 0.46,    // Bright rim/edge visibility for the 3D glass shape
+    rimLightOpacity: 0.62,         // Top/left rim light that follows the badge shape
+    edgeGlowOpacity: 0.24,         // Bottom/right soft light that gives the badge cylindrical depth
+    innerShadowOpacity: 0.16,      // Inner edge depth that makes the badge feel thicker
+    surfaceSheenOpacity: 0.14,     // Soft top/sweep highlight across the glass surface
+    refractionOpacity: 0.28,       // Subtle edge distortion illusion; set 0 for lowest visual cost
+    fontOpacity: 0.60,             // Opacity of the PAUSED label inside the glass badge
+    trackingEm: 0.01,              // +10 tracking for the PAUSED label
     landscapeWidthPctOfDisc: 52,  // Landscape badge width as a % of the disc/right art area
     portraitPhoneWidthPct: 42,    // Phone portrait badge width as a % of viewport width
     portraitTabletWidthPct: 28,   // Tablet portrait badge width as a % of viewport width
