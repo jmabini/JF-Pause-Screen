@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.7.1',
+  version: '3.8.0',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -63,6 +63,10 @@ export const CONFIG = {
   genresMaxDefault: 5,            // Max genres shown on tablets/desktop
   enableTextShadow: true,         // Toggle the global text dropshadow
   textShadowDefinition: "0 2px 4px rgba(0,0,0,0.6), 0 0 15px var(--theme-drop-shadow, rgba(0,0,0,1)), 0 0 40px var(--theme-drop-shadow, rgba(0,0,0,0.7))", // CSS shadow syntax
+  landscapeColumns: {
+    left: 5.45,                   // Relative width of the landscape text/logo column
+    right: 2.55,                  // Relative width of the landscape disc column
+  },
 
   // FONT SIZES (Using Viewport Width 'vw' for fluid scaling)
   fonts: {

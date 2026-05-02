@@ -17,7 +17,7 @@ import { CONFIG } from '../config.js';
 })();
 
 export function getStyles() {
-  const F = CONFIG.fonts, M = CONFIG.margins;
+  const F = CONFIG.fonts, M = CONFIG.margins, LC = CONFIG.landscapeColumns;
   const TS = `text-shadow: ${CONFIG.enableTextShadow ? CONFIG.textShadowDefinition : 'none'};`;
 
   return `
@@ -126,10 +126,16 @@ export function getStyles() {
     #pause-overlay .ps-progress-meta { font-size: ${F.tabletLandscape.progressMeta}; }
   }
   @media (orientation: landscape) {
-    #pause-overlay .ps-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 3fr); gap: clamp(16px, 1.5vw, 32px); }
-    #pause-overlay .ps-left { justify-content: flex-start; min-width: 0; }
-    #pause-overlay .ps-right { margin: 0; min-width: 0; }
-    #pause-overlay .ps-disc { width: 100%; max-width: 100%; height: auto; max-height: 100%; aspect-ratio: 1 / 1; }
+    #pause-overlay .ps-layout { display: grid; grid-template-columns: minmax(0, ${LC.left}fr) minmax(0, ${LC.right}fr); gap: clamp(16px, 1.5vw, 32px); align-items: stretch; }
+    #pause-overlay .ps-left { justify-content: flex-start; align-self: stretch; min-width: 0; overflow: hidden; }
+    #pause-overlay .ps-right { display: flex; align-self: stretch; justify-content: center; align-items: center; margin: 0; min-width: 0; min-height: 0; overflow: visible; }
+    #pause-overlay .ps-logo { align-self: flex-start; width: min(100%, 30vw); max-width: 100%; max-height: clamp(180px, 24vh, 340px); object-fit: contain; object-position: left top; margin: 0 0 1.5vh 0; }
+    #pause-overlay .ps-synopsis { max-width: 100%; }
+    #pause-overlay .ps-disc { width: 100%; max-width: 100%; height: auto; max-height: 100%; aspect-ratio: 1 / 1; object-position: center; }
+  }
+  @media (orientation: landscape) and (pointer: fine) {
+    #pause-overlay .ps-layout { top: 6vh; bottom: calc(14vh + env(safe-area-inset-bottom, 0px)); }
+    @supports (height: 100dvh) { #pause-overlay .ps-layout { top: 6dvh; bottom: calc(14dvh + env(safe-area-inset-bottom, 0px)); } }
   }
 
   /* CHAPTER TICKS */
