@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.10.12',
+  version: '3.13.0',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -24,19 +24,16 @@ export const CONFIG = {
   measureScale: 1,                // Canvas scale multiplier for text measurement (1=normal, 2=hi-DPI precision)
 
   // THEME CONTRAST
-  themeContrastMinLuminance: 0.12, // Minimum WCAG relative luminance for divider/progress bar (0–1)
+  themeContrastMinLuminance: 0.12, // Minimum WCAG relative luminance for progress bar (0-1)
 
-  // DYNAMIC THEME & DROPSHADOW
-  enableThemeColor: true,         // Toggle dominant color extraction for UI elements
+  // DYNAMIC THEME
+  enableThemeColor: true,         // Toggle dominant color extraction for the progress bar
   themeBrightnessBoost: 0.25,     // Increases lightness of theme color (0.0 to 1.0)
   themeSaturationBoost: 0.75,     // Increases saturation of theme color (0.0 to 1.0)
-  enableDynamicDropshadow: true,  // Toggle dropshadow based on background dominant color
-  dropshadowExposureAmount: 0.7,  // Multiplier for shadow brightness (0.0 = black, 1.0 = original color)
-  dropshadowAlpha: 1,             // Shadow opacity (0.0 = invisible, 1.0 = fully opaque)
 
   // BACKDROP
   backdropBrightness: 0.60,       // Background image brightness (0.0 = black, 1.0 = original)
-  vignetteOpacity: 0.6,          // Vignette edge darkness (0.0 = none, 1.0 = solid black)
+  vignetteOpacity: 0.6,           // Vignette edge darkness (0.0 = none, 1.0 = solid black)
   backdropCycleRestMs: 30000,     // How long (ms) to show each backdrop before cycling
   backdropFadeMs: 2000,           // Duration (ms) of the cross-fade between backdrops
   preBlurSize: 128,               // Resolution (px) of low-res blur (performance optimization)
@@ -52,7 +49,7 @@ export const CONFIG = {
   // LOGO AUTO-CROP
   logoCropPaddingPx: 4,           // Extra margin (px) around cropped logos
   logoCropAlphaThreshold: 10,     // 0-255: Minimum opacity to consider as 'visible' pixel
-  logoCropScanStep: 2,            // 1-16: Pixels skipped during scan (higher = faster, lower = accurate)
+  logoCropScanStep: 6,            // 1-16: Pixels skipped during scan (higher = faster, lower = accurate)
 
   // DISC IMAGE & CACHE
   discSpinSeconds: 60,            // Duration (s) for a full 360 degree rotation
@@ -95,7 +92,7 @@ export const CONFIG = {
   genresMaxPhonePortrait: 1,      // Max genres shown on small mobile screens
   genresMaxDefault: 5,            // Max genres shown on tablets/desktop
   enableTextShadow: true,         // Toggle the global text dropshadow
-  textShadowDefinition: "0 2px 4px rgba(0,0,0,0.6), 0 0 15px var(--theme-drop-shadow, rgba(0,0,0,1)), 0 0 40px var(--theme-drop-shadow, rgba(0,0,0,0.7))", // CSS shadow syntax
+  textShadowDefinition: "0 2px 4px rgba(0,0,0,0.7), 0 0 16px rgba(0,0,0,0.75)", // CSS shadow syntax
   landscapeColumns: {
     left: 5.45,                   // Relative width of the landscape text/logo column
     right: 2.55,                  // Relative width of the landscape disc column

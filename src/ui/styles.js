@@ -55,7 +55,7 @@ export function getStyles() {
   @media (prefers-reduced-motion: reduce) { #pause-overlay .ps-disc { animation: none !important; } }
   #pause-overlay *::-webkit-scrollbar { display: none; } #pause-overlay * { box-sizing: border-box; }
   
-  #pause-overlay .ps-backdrop-bg, #pause-overlay .ps-backdrop-fg { position: absolute; inset: 0; background-color: #000; background-size: cover; background-position: center; filter: brightness(${CONFIG.backdropBrightness}); transform: translateZ(0); will-change: opacity, filter, transform; }
+  #pause-overlay .ps-backdrop-bg, #pause-overlay .ps-backdrop-fg { position: absolute; inset: 0; background-color: #000; background-size: cover; background-position: center; filter: brightness(${CONFIG.backdropBrightness}); transform: translateZ(0); }
   #pause-overlay .ps-backdrop-fg { opacity: 0; }
   #pause-overlay .ps-backdrop-bg.ps-blurred, #pause-overlay .ps-backdrop-fg.ps-blurred { filter: brightness(${CONFIG.backdropBrightness}) blur(25px); transform: scale(1.2); }
   
@@ -75,11 +75,11 @@ export function getStyles() {
   #pause-overlay .ps-meta .ps-genres { overflow: hidden; text-overflow: ellipsis; flex-shrink: 3; padding: 10px 0; margin: -10px 0; }
   #pause-overlay .ps-rating-badge { border: 1px solid rgba(255,255,255,0.4); border-radius: 2px; flex-shrink: 0; font-weight: 500; font-size: ${F.desktop.ratingBadge}; padding: 0.15vh 0.5vw; }
   
-  #pause-overlay .ps-divider { width: 40px; height: 1.5px; background: var(--theme-color, rgba(255,255,255,0.3)); box-shadow: 0 0 20px var(--theme-glow, transparent), 0 0 40px var(--theme-glow, transparent); margin: 2vh 0; flex-shrink: 0; border-radius: 1px; transition: background-color 2s ease, box-shadow 2s ease; }
+  #pause-overlay .ps-divider { width: 40px; height: 1.5px; background: rgba(255,255,255,0.5); margin: 2vh 0; flex-shrink: 0; border-radius: 1px; }
   
   #pause-overlay .ps-synopsis { padding: 0 20px; margin: 0 -20px; font-size: ${F.desktop.synopsis}; line-height: 1.5; color: rgba(255,255,255,0.92); flex: 0 1 auto; min-height: 0; max-height: 100%; ${TS} position: relative; overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y; overflow-wrap: anywhere; word-break: break-word; }
   
-  #pause-overlay .ps-disc { display: none; width: 100%; max-height: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 50%; animation: ps-spin-ls var(--disc-spin-speed, 60s) linear infinite; filter: brightness(0.85) drop-shadow(0 8px 16px rgba(0,0,0,0.4)) drop-shadow(0 0 80px var(--theme-glow-raw, transparent)); transition: filter 2s ease; }
+  #pause-overlay .ps-disc { display: none; width: 100%; max-height: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 50%; animation: ps-spin-ls var(--disc-spin-speed, 60s) linear infinite; filter: brightness(0.85) drop-shadow(0 8px 16px rgba(0,0,0,0.4)); }
   @media (orientation: landscape) { #pause-overlay .ps-disc { display: block; } } @media (orientation: portrait) { #pause-overlay .ps-disc { display: none !important; } }
   #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${fontOpacity}); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: ${fontWeight}; line-height: 1; letter-spacing: ${trackingEm}em; text-transform: uppercase; background: rgba(255,255,255,${glassTint}); border: 1px solid rgba(255,255,255,${borderOpacity}); box-shadow: 0 2px 16px rgba(0,0,0,0.12); -webkit-backdrop-filter: blur(${frost}px) brightness(${glassBrightness}) saturate(${glassSaturation}); backdrop-filter: blur(${frost}px) brightness(${glassBrightness}) saturate(${glassSaturation}); }
   #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${fontOpacity}); text-shadow: 0 1px 3px rgba(0,0,0,0.30); }
@@ -185,10 +185,10 @@ export function getStyles() {
   /* CHAPTER TICKS */
   #pause-overlay .ps-chapter-ticks { position: absolute; top: 0; left: 0; right: 0; height: 100%; pointer-events: none; overflow: hidden; border-radius: 2px; }
   #pause-overlay .ps-chapter-tick { position: absolute; top: 0; width: 2px; height: 100%; background: rgba(255,255,255,0.55); border-radius: 1px; transform: translateX(-50%); transition: background-color 0.2s, filter 0.2s; }
-  #pause-overlay .ps-chapter-tick.ps-past { background: var(--theme-color, rgba(255,255,255,0.55)); filter: brightness(0.5); }
+  #pause-overlay .ps-chapter-tick.ps-past { background: rgba(0,0,0,0.75); filter: none; }
 
   /* SCREENSAVER / IDLE MODE */
-  #pause-overlay .ps-screensaver-logo { display: none; position: fixed; pointer-events: none; z-index: 2147483647; opacity: 0; transition: opacity 1.2s ease; left: 0; top: 0; will-change: transform; object-fit: contain; }
+  #pause-overlay .ps-screensaver-logo { display: none; position: fixed; pointer-events: none; z-index: 2147483647; opacity: 0; transition: opacity 1s ease; left: 0; top: 0; will-change: transform, opacity; object-fit: contain; object-position: center; }
   #pause-overlay.ps-screensaver .ps-screensaver-logo { display: block; }
   #pause-overlay.ps-screensaver .ps-layout,
   #pause-overlay.ps-screensaver .ps-progress-wrap,

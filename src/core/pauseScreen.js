@@ -17,6 +17,43 @@ import {
 import { getStyles } from '../ui/styles.js';
 import { createOverlay } from '../ui/elements.js';
 
+const VALID_ITEM_TYPES = new Set(['Movie', 'Episode', 'Video', 'MusicVideo', 'TvChannel', 'Program', 'Trailer', 'Audio']);
+const BLOCKING_ELEMENT_SELECTORS = ['.dialogContainer', '.actionSheet', '.upNextDialog', '.playerStats-content'];
+const SAFE_ZONE_SELECTORS = [
+  '.ps-paused-badge',
+  '.dialogBackdrop', '.dialogContainer', '.dialog',
+  '.actionSheet',
+  '.upNextDialog', '.upNextContainer',
+  '.skip-button-container', '.skip-button',
+  '.playerStats-content',
+  '.subtitleSync', '.subtitleSyncContainer',
+  '.syncPlayContainer',
+  '.chapterThumbContainer',
+  '.sliderBubble',
+  '.in-player-preview',
+  '.modal-container'
+];
+const OSD_TARGET_SELECTORS = [
+  '.ps-close-btn', '.videoOsdBottom', '.osdHeader', '.osdControls',
+  '.header-player', '.btnBack', '.btnSubtitles', '.btnSettings',
+  '.btnPip', '.btnCast', '.btnInfo', '.btnAudio', '.btnFullscreen',
+  '.btnVideoOsdSettings', '.btnRecord', '.btnUserRating',
+  '.btnPreviousTrack', '.btnNextTrack', '.btnPreviousChapter', '.btnNextChapter',
+  '.osdTextContainer', '.osdPositionSlider', '.osdVolumeSlider'
+];
+const OVERLAY_PROTECTED_SELECTORS = [
+  '.ps-meta', '.ps-progress-wrap', '.ps-divider', '.ps-paused-badge',
+  ...SAFE_ZONE_SELECTORS.filter(selector => selector !== '.ps-paused-badge'),
+  ...OSD_TARGET_SELECTORS.filter(selector => selector !== '.ps-close-btn')
+];
+const CLICK_PROTECTED_SELECTORS = ['.ps-synopsis', ...OVERLAY_PROTECTED_SELECTORS];
+const SCREENSAVER_ELEMENTS_FADE_MS = 1500;
+const SCREENSAVER_LOGO_DELAY_MS = SCREENSAVER_ELEMENTS_FADE_MS + 500;
+
+function isInAnyZone(target, selectors) {
+  return selectors.some(selector => target.closest(selector));
+}
+
 export function initPauseScreen(bootObserver) {
   // --- INTERNAL STATE ---
   let video = null, mouseTimer = null, fetchAbort = null;
@@ -24,9 +61,9 @@ export function initPauseScreen(bootObserver) {
   let resizeObserver = null, resizeDebounce = null, lastPauseTime = 0, globalPauseTime = 0, isAdjusting = false;
   
   const itemCache = makeLRUCache(50);
+  const themeColorCache = makeLRUCache(CONFIG.blobCacheMaxSize);
   const imgBlobCache = makeLRUBlobCache(CONFIG.blobCacheMaxSize);
   
-  let currentCroppedLogoUrl = null;
   let activeBackdropItemId = null;
   let maxBackdropIndex = null;
   let backdropTags = [];
@@ -46,7 +83,7 @@ export function initPauseScreen(bootObserver) {
 
   // --- IDLE SCREENSAVER STATE ---
   let idleTimer = null, isScreensaver = false;
-  let ssLogoX = 0, ssLogoY = 0, ssVelX = 1, ssVelY = 0.7, ssRaf = null, ssStartTime = 0;
+  let ssLogoX = 0, ssLogoY = 0, ssVelX = 1, ssVelY = 0.7, ssRaf = null, ssStartTime = 0, ssStartTimer = null;
   let chapterTicksData = [];
 
   // --- UI SETUP ---
@@ -307,6 +344,84 @@ export function initPauseScreen(bootObserver) {
     return null;
   }
 
+  function imageUrl(itemId, imageType, index = null, tag = '') {
+    const indexPath = index === null ? '' : `/${index}`;
+    const tagQuery = tag ? `?tag=${tag}` : '';
+    return `/Items/${itemId}/Images/${imageType}${indexPath}${tagQuery}`;
+  }
+
+  function getLogoUrls(itemId, seriesId, parentId) {
+    return [
+      ...(seriesId ? [imageUrl(seriesId, 'Logo')] : []),
+      ...(parentId ? [imageUrl(parentId, 'Logo')] : []),
+      imageUrl(itemId, 'Logo')
+    ];
+  }
+
+  function getDiscUrls(data, itemId, parentId) {
+    return data.Type === 'Movie' ? [
+      imageUrl(itemId, 'Disc'),
+      ...(parentId ? [imageUrl(parentId, 'Disc')] : [])
+    ] : [];
+  }
+
+  function getFallbackBackdropUrls(itemId, parentId) {
+    return [
+      imageUrl(itemId, 'Thumb'),
+      ...(parentId ? [imageUrl(parentId, 'Thumb')] : []),
+      imageUrl(itemId, 'Primary'),
+      ...(parentId ? [imageUrl(parentId, 'Primary')] : [])
+    ];
+  }
+
+  function applyThemeFromBackdrop(blobUrl, expectedItemId, signal) {
+    if (!blobUrl || !CONFIG.enableThemeColor) {
+      applyThemeColor(overlay, null);
+      return Promise.resolve();
+    }
+
+    const cachedColor = themeColorCache.get(blobUrl);
+    if (cachedColor !== undefined) {
+      applyThemeColor(overlay, cachedColor);
+      return Promise.resolve(cachedColor);
+    }
+
+    return directorRequest('extractColor', { blobUrl }, signal)
+      .then(color => {
+        themeColorCache.set(blobUrl, color || null);
+        if (currentItemId === expectedItemId) applyThemeColor(overlay, color);
+        return color;
+      })
+      .catch(() => {});
+  }
+
+  function applyCachedBlurredBackdrop(el, blobUrl) {
+    const cacheKey = `${blobUrl}_blur`;
+    if (!imgBlobCache.has(cacheKey)) return false;
+    el.style.backgroundImage = `url('${imgBlobCache.get(cacheKey)}')`;
+    el.classList.remove('ps-blurred');
+    return true;
+  }
+
+  function preBlurBackdrop(el, blobUrl, expectedItemId, signal) {
+    if (!blobUrl || CONFIG.preBlurSize <= 0 || applyCachedBlurredBackdrop(el, blobUrl)) return;
+    directorRequest('preBlur', {
+      blobUrl,
+      size: CONFIG.preBlurSize,
+      passes: CONFIG.preBlurPasses || 3,
+      blurRadius: CONFIG.preBlurRadius || 20
+    }, signal)
+      .then(res => {
+        if (currentItemId === expectedItemId && res?.blurredBlob) {
+          const blurUrl = URL.createObjectURL(res.blurredBlob);
+          imgBlobCache.set(`${blobUrl}_blur`, blurUrl);
+          el.style.backgroundImage = `url('${blurUrl}')`;
+          el.classList.remove('ps-blurred');
+        }
+      })
+      .catch(() => {});
+  }
+
   function getAuth() {
     try {
       const raw = localStorage.getItem('jellyfin_credentials');
@@ -342,16 +457,14 @@ export function initPauseScreen(bootObserver) {
       if (currentItemId !== expectedItemId || !isOverlayVisible) return;
       let nextIndex = activeBackdropIndex + 1;
       if (maxBackdropIndex !== null && nextIndex >= maxBackdropIndex) nextIndex = 0;
-      const tagQuery = backdropTags[nextIndex] ? `?tag=${backdropTags[nextIndex]}` : '';
-      let nextUrl = `/Items/${activeBackdropItemId}/Images/Backdrop/${nextIndex}${tagQuery}`;
+      let nextUrl = imageUrl(activeBackdropItemId, 'Backdrop', nextIndex, backdropTags[nextIndex]);
       let nextBlob = await fetchAsBlob(nextUrl);
       if (currentItemId !== expectedItemId || !isOverlayVisible) return;
       if (!nextBlob) {
         maxBackdropIndex = nextIndex;
         if (maxBackdropIndex <= 1) return;
         nextIndex = 0;
-        const fallbackTagQuery = backdropTags[nextIndex] ? `?tag=${backdropTags[nextIndex]}` : '';
-        nextUrl = `/Items/${activeBackdropItemId}/Images/Backdrop/${nextIndex}${fallbackTagQuery}`;
+        nextUrl = imageUrl(activeBackdropItemId, 'Backdrop', nextIndex, backdropTags[nextIndex]);
         nextBlob = await fetchAsBlob(nextUrl);
         if (!nextBlob) { maxBackdropIndex = 1; return; }
       }
@@ -361,30 +474,17 @@ export function initPauseScreen(bootObserver) {
       void fgBackdropEl.offsetWidth;
       fgBackdropEl.style.transition = `opacity ${CONFIG.backdropFadeMs}ms ease`;
       fgBackdropEl.style.opacity = '1';
-      directorRequest('extractColor', { blobUrl: nextBlob }).then(c => { if (currentItemId === expectedItemId) applyThemeColor(overlay, c); }).catch(()=>{});
+      applyThemeFromBackdrop(nextBlob, expectedItemId);
       
       if (isFallbackPrimary && CONFIG.preBlurSize > 0) {
-          directorRequest('preBlur', { blobUrl: nextBlob, size: CONFIG.preBlurSize, passes: CONFIG.preBlurPasses || 3, blurRadius: CONFIG.preBlurRadius || 20 })
-            .then(res => {
-              if (currentItemId === expectedItemId && res?.blurredBlob) {
-                const blurUrl = URL.createObjectURL(res.blurredBlob);
-                imgBlobCache.set(nextBlob + '_blur', blurUrl);
-                fgBackdropEl.style.backgroundImage = `url('${blurUrl}')`;
-                fgBackdropEl.classList.remove('ps-blurred');
-              }
-            }).catch(() => {});
+        preBlurBackdrop(fgBackdropEl, nextBlob, expectedItemId);
       }
 
       setTimeout(() => {
         if (currentItemId !== expectedItemId) return;
         bgBackdropEl.style.backgroundImage = `url('${nextBlob}')`;
         if (isFallbackPrimary) {
-           if (imgBlobCache.has(nextBlob + '_blur')) {
-               bgBackdropEl.style.backgroundImage = `url('${imgBlobCache.get(nextBlob + '_blur')}')`;
-               bgBackdropEl.classList.remove('ps-blurred');
-           } else {
-               bgBackdropEl.classList.add('ps-blurred');
-           }
+           if (!applyCachedBlurredBackdrop(bgBackdropEl, nextBlob)) bgBackdropEl.classList.add('ps-blurred');
         } else {
            bgBackdropEl.classList.remove('ps-blurred');
         }
@@ -414,8 +514,7 @@ export function initPauseScreen(bootObserver) {
         const jsonText = await resp.text();
         data = await directorRequest('parseMetadata', { jsonText }, fetchAbort.signal);
         
-        const validTypes = ['Movie', 'Episode', 'Video', 'MusicVideo', 'TvChannel', 'Program', 'Trailer', 'Audio'];
-        if (!validTypes.includes(data.Type)) {
+        if (!VALID_ITEM_TYPES.has(data.Type)) {
           console.warn(`[PauseScreen] Invalid metadata type: ${data.Type}`);
           resetFetchState();
           return false;
@@ -431,8 +530,7 @@ export function initPauseScreen(bootObserver) {
       }
     }
     
-    const validTypes = ['Movie', 'Episode', 'Video', 'MusicVideo', 'TvChannel', 'Program', 'Trailer', 'Audio'];
-    if (data && !validTypes.includes(data.Type)) {
+    if (data && !VALID_ITEM_TYPES.has(data.Type)) {
       resetFetchState();
       return false;
     }
@@ -479,12 +577,11 @@ export function initPauseScreen(bootObserver) {
       let firstBackdropBlob = null;
       activeBackdropIndex = 0;
       if (activeBackdropItemId) {
-        const tagQuery = backdropTags[0] ? `?tag=${backdropTags[0]}` : '';
-        firstBackdropBlob = await fetchAsBlob(`/Items/${activeBackdropItemId}/Images/Backdrop/0${tagQuery}`, signal);
+        firstBackdropBlob = await fetchAsBlob(imageUrl(activeBackdropItemId, 'Backdrop', 0, backdropTags[0]), signal);
       }
       if (!firstBackdropBlob) {
         maxBackdropIndex = 1;
-        const fallbacks = [`/Items/${itemId}/Images/Thumb`, ...(parentId ? [`/Items/${parentId}/Images/Thumb`] : []), `/Items/${itemId}/Images/Primary`, ...(parentId ? [`/Items/${parentId}/Images/Primary`] : [])];
+        const fallbacks = getFallbackBackdropUrls(itemId, parentId);
         for (let f of fallbacks) {
           const b = await fetchAsBlob(f, signal);
           if (b) { firstBackdropBlob = b; if (f.includes('/Primary') && !isEpisode) isFallbackPrimary = true; break; }
@@ -495,20 +592,10 @@ export function initPauseScreen(bootObserver) {
         bgBackdropEl.style.backgroundImage = `url('${firstBackdropBlob}')`;
         if (isFallbackPrimary) { bgBackdropEl.classList.add('ps-blurred'); fgBackdropEl.classList.add('ps-blurred'); }
         else { bgBackdropEl.classList.remove('ps-blurred'); fgBackdropEl.classList.remove('ps-blurred'); }
-        directorRequest('extractColor', { blobUrl: firstBackdropBlob }, signal)
-          .then(c => { if (currentItemId === itemId) applyThemeColor(overlay, c); })
-          .catch(() => {});
+        applyThemeFromBackdrop(firstBackdropBlob, itemId, signal);
 
         if (isFallbackPrimary && CONFIG.preBlurSize > 0) {
-          directorRequest('preBlur', { blobUrl: firstBackdropBlob, size: CONFIG.preBlurSize, passes: CONFIG.preBlurPasses || 3, blurRadius: CONFIG.preBlurRadius || 20 }, signal)
-            .then(res => {
-              if (currentItemId === itemId && res?.blurredBlob) {
-                const blurUrl = URL.createObjectURL(res.blurredBlob);
-                imgBlobCache.set(firstBackdropBlob + '_blur', blurUrl);
-                bgBackdropEl.style.backgroundImage = `url('${blurUrl}')`;
-                bgBackdropEl.classList.remove('ps-blurred');
-              }
-            }).catch(() => {});
+          preBlurBackdrop(bgBackdropEl, firstBackdropBlob, itemId, signal);
         }
 
         if (isOverlayVisible && (maxBackdropIndex === null || maxBackdropIndex > 1)) cycleBackdrop(itemId);
@@ -516,13 +603,18 @@ export function initPauseScreen(bootObserver) {
     })();
 
     const logoPromise = (async () => {
-      const logoUrls = [...(seriesId ? [`/Items/${seriesId}/Images/Logo`] : []), ...(parentId ? [`/Items/${parentId}/Images/Logo`] : []), `/Items/${itemId}/Images/Logo`];
-      const logoBlob = await fetchSequential(logoUrls, signal);
+      const logoBlob = await fetchSequential(getLogoUrls(itemId, seriesId, parentId), signal);
       if (currentItemId !== itemId || !logoBlob) return;
       logoEl.src = logoBlob;
       logoEl.style.setProperty('display', 'block', 'important');
       titleEl.style.display = 'none';
       adjustLayout();
+      const croppedLogoKey = `${logoBlob}_crop`;
+      if (imgBlobCache.has(croppedLogoKey)) {
+        logoEl.src = imgBlobCache.get(croppedLogoKey);
+        adjustLayout();
+        return;
+      }
       directorRequest('autocrop', { 
         blobUrl: logoBlob, 
         step: CONFIG.logoCropScanStep || 2,
@@ -531,18 +623,14 @@ export function initPauseScreen(bootObserver) {
       }, signal).then(res => {
         if (currentItemId !== itemId || !res || !res.croppedBlob) return;
         const croppedUrl = URL.createObjectURL(res.croppedBlob);
-        if (currentCroppedLogoUrl && currentCroppedLogoUrl !== logoBlob) {
-          URL.revokeObjectURL(currentCroppedLogoUrl);
-        }
-        currentCroppedLogoUrl = croppedUrl;
+        imgBlobCache.set(croppedLogoKey, croppedUrl);
         logoEl.src = croppedUrl;
         adjustLayout();
       }).catch(()=>{});
     })();
 
     const discPromise = (async () => {
-      const discUrls = data.Type === 'Movie' ? [`/Items/${itemId}/Images/Disc`, ...(parentId ? [`/Items/${parentId}/Images/Disc`] : [])] : [];
-      const discBlob = await fetchSequential(discUrls, signal);
+      const discBlob = await fetchSequential(getDiscUrls(data, itemId, parentId), signal);
       if (currentItemId !== itemId) return;
       const hasDisc = !!discBlob;
       const showDisc = hasDisc && !isPortrait();
@@ -558,8 +646,8 @@ export function initPauseScreen(bootObserver) {
       }
     })();
 
-    // Let image assets load in the background — overlay shows text immediately
-    Promise.all([backdropPromise, logoPromise, discPromise]);
+    // Let image assets load in the background; optional failures should stay quiet.
+    void Promise.allSettled([backdropPromise, logoPromise, discPromise]);
     
     return true;
   }
@@ -651,8 +739,7 @@ export function initPauseScreen(bootObserver) {
       if (!video || !video.paused) return;
 
       // Prevent showing if a native dialog or menu is actively open
-      const blockingElements = ['.dialogContainer', '.actionSheet', '.upNextDialog', '.playerStats-content'];
-      const isBlockingElementOpen = blockingElements.some(sel => {
+      const isBlockingElementOpen = BLOCKING_ELEMENT_SELECTORS.some(sel => {
          const el = document.querySelector(sel);
          // More robust visibility check
          return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
@@ -722,10 +809,7 @@ export function initPauseScreen(bootObserver) {
   function resetFetchState() { if (fetchAbort) { fetchAbort.abort(); fetchAbort = null; } clearTimeout(prefetchRetryTimer); prefetchRetryTimer = null; clearTimeout(pauseShowTimer); pauseShowTimer = null; currentItemId = null; renderedItemId = null; lastPauseTime = 0; activeBackdropItemId = null; maxBackdropIndex = null; authHeaders = {}; activeBackdropIndex = 0; clearTimeout(backdropCycleTimer); backdropCycleTimer = null; isFallbackPrimary = false; backdropTags = []; }
   
   function resetDOMContent() {
-    if (currentCroppedLogoUrl) {
-      URL.revokeObjectURL(currentCroppedLogoUrl);
-      currentCroppedLogoUrl = null;
-    }
+    clearScreensaverState();
     bgBackdropEl.style.backgroundImage = '';
     fgBackdropEl.style.backgroundImage = '';
     fgBackdropEl.style.transition = 'none';
@@ -790,6 +874,27 @@ export function initPauseScreen(bootObserver) {
   }
 
   // --- IDLE SCREENSAVER ---
+  function resetScreensaverLogo() {
+    screensaverLogoEl.style.opacity = '0';
+    screensaverLogoEl.style.width = '';
+    screensaverLogoEl.style.height = '';
+    screensaverLogoEl.style.transform = '';
+    screensaverLogoEl.style.transformOrigin = '';
+    screensaverLogoEl.src = '';
+  }
+
+  function clearScreensaverState() {
+    isScreensaver = false;
+    clearTimeout(ssStartTimer);
+    ssStartTimer = null;
+    cancelAnimationFrame(ssRaf);
+    ssRaf = null;
+    overlay.classList.remove('ps-screensaver');
+    resetScreensaverLogo();
+    ssLogoX = 0;
+    ssLogoY = 0;
+  }
+
   function bounceLogo() {
     const speedFull = CONFIG.idleLogoSpeedPx || 80;
     const rampMs = CONFIG.idleLogoRampMs || 5000;
@@ -842,48 +947,46 @@ export function initPauseScreen(bootObserver) {
 
   function enterScreensaver() {
     if (isScreensaver || !isOverlayVisible) return;
-    isScreensaver = true;
-    stopScrollAnimation();
-
-    // Sync screensaver logo with current logo src
-    const logoSrc = logoEl.src || '';
+    const logoSrc = logoEl.currentSrc || logoEl.src || '';
     if (!logoSrc) {
       resetIdleTimer();
       return;
     }
 
-    screensaverLogoEl.src = logoSrc;
-
-    // Start from the logo's current on-screen position (no jump)
+    // Reuse the current logo asset and rendered size, but let the screensaver copy start centered.
     const logoRect = logoEl.getBoundingClientRect();
-    ssLogoX = logoRect.left;
-    ssLogoY = logoRect.top;
-    
-    // Lock dimensions to the exact pixel size of the original logo at start time.
-    // This ensures the base size remains perfectly constant (and scaling is smooth) 
-    // even if CSS media queries try to alter it during an orientation change.
-    screensaverLogoEl.style.width = `${logoRect.width}px`;
-    screensaverLogoEl.style.height = `${logoRect.height}px`;
-    screensaverLogoEl.style.transformOrigin = 'top left'; // ensures scale() expands downwards/rightwards logically
-    screensaverLogoEl.style.transform = `translate3d(${ssLogoX}px, ${ssLogoY}px, 0) scale(1)`;
-    screensaverLogoEl.style.opacity = '1'; // immediately visible at its original spot
+    if (!logoRect.width || !logoRect.height) {
+      resetIdleTimer();
+      return;
+    }
+
+    isScreensaver = true;
+    stopScrollAnimation();
 
     const angle = Math.random() * Math.PI * 2;
     ssVelX = Math.cos(angle); ssVelY = Math.sin(angle);
-    ssStartTime = performance.now();
+    screensaverLogoEl.src = logoSrc;
+    screensaverLogoEl.style.width = `${logoRect.width}px`;
+    screensaverLogoEl.style.height = `${logoRect.height}px`;
+    screensaverLogoEl.style.transformOrigin = 'top left';
+    screensaverLogoEl.style.opacity = '0';
 
     overlay.classList.add('ps-screensaver');
-    bounceLogo();
+
+    ssStartTimer = setTimeout(() => {
+      if (!isScreensaver) return;
+      ssLogoX = Math.max(0, (window.innerWidth - logoRect.width) / 2);
+      ssLogoY = Math.max(0, (window.innerHeight - logoRect.height) / 2);
+      screensaverLogoEl.style.transform = `translate3d(${ssLogoX}px, ${ssLogoY}px, 0) scale(1)`;
+      screensaverLogoEl.style.opacity = '1';
+      ssStartTime = performance.now();
+      bounceLogo();
+    }, SCREENSAVER_LOGO_DELAY_MS);
   }
 
   function exitScreensaver() {
     if (!isScreensaver) return;
-    isScreensaver = false;
-    cancelAnimationFrame(ssRaf); ssRaf = null;
-    overlay.classList.remove('ps-screensaver');
-    screensaverLogoEl.style.opacity = '0';
-    screensaverLogoEl.src = '';
-    ssLogoX = 0; ssLogoY = 0;
+    clearScreensaverState();
     resetIdleTimer();
   }
 
@@ -907,49 +1010,12 @@ export function initPauseScreen(bootObserver) {
   function onGlobalScreenTap(e) {
     if (!video) return;
 
-    // 1. Safe zones: every overlay window in Jellyfin (native + plugin)
-    // Covers: dialogHelper modals, action sheets, Up Next, Skip buttons,
-    // playback stats, subtitle sync, SyncPlay, chapter previews, slider bubbles
-    const safeZones = [
-      // Custom pause badge
-      '.ps-paused-badge',
-      // dialogHelper system (settings, audio/subtitle pickers, all plugin dialogs)
-      '.dialogBackdrop', '.dialogContainer', '.dialog',
-      // Action sheets (subtitle/audio track selection, settings menu)
-      '.actionSheet',
-      // Up Next auto-play dialog
-      '.upNextDialog', '.upNextContainer',
-      // Skip Intro / Skip Outro / Skip Credits buttons
-      '.skip-button-container', '.skip-button',
-      // Playback stats overlay ("Stats for Nerds")
-      '.playerStats-content',
-      // Subtitle sync offset slider
-      '.subtitleSync', '.subtitleSyncContainer',
-      // SyncPlay group watch indicator
-      '.syncPlayContainer',
-      // Chapter/trickplay preview on scrub
-      '.chapterThumbContainer',
-      // Slider tooltip bubbles (volume, position)
-      '.sliderBubble',
-      // In-player episode/collection preview list
-      '.in-player-preview',
-      // Generic catch-all for unknown plugin overlays
-      '.modal-container'
-    ];
-    if (safeZones.some(sel => e.target.closest(sel))) {
+    if (isInAnyZone(e.target, SAFE_ZONE_SELECTORS)) {
       return;
     }
 
     // 2. Do not toggle if the user tapped directly on OSD controls
-    const osdTargets = [
-      '.ps-close-btn', '.videoOsdBottom', '.osdHeader', '.osdControls',
-      '.header-player', '.btnBack', '.btnSubtitles', '.btnSettings',
-      '.btnPip', '.btnCast', '.btnInfo', '.btnAudio', '.btnFullscreen',
-      '.btnVideoOsdSettings', '.btnRecord', '.btnUserRating',
-      '.btnPreviousTrack', '.btnNextTrack', '.btnPreviousChapter', '.btnNextChapter',
-      '.osdTextContainer', '.osdPositionSlider', '.osdVolumeSlider'
-    ];
-    if (osdTargets.some(sel => e.target.closest(sel))) return;
+    if (isInAnyZone(e.target, OSD_TARGET_SELECTORS)) return;
 
     // 3. When dismissed (pause screen on, and pressed x), limit play toggle to top 70%
     if (isDismissed) {
@@ -1107,26 +1173,7 @@ export function initPauseScreen(bootObserver) {
       return;
     }
 
-    // ── INTERACTIVE ELEMENTS & MODALS: never play ──
-    const noPlayZones = [
-      // Our own UI elements
-      '.ps-meta', '.ps-progress-wrap', '.ps-divider', '.ps-paused-badge',
-      // OSD controls
-      '.videoOsdBottom', '.osdHeader', '.osdControls', '.header-player',
-      // dialogHelper system
-      '.dialogBackdrop', '.dialogContainer', '.dialog', '.actionSheet',
-      // Up Next / Skip
-      '.upNextDialog', '.upNextContainer',
-      '.skip-button-container', '.skip-button',
-      // Playback stats, subtitle sync, SyncPlay
-      '.playerStats-content', '.subtitleSync', '.subtitleSyncContainer',
-      '.syncPlayContainer',
-      // Chapter preview, slider bubbles, episode preview
-      '.chapterThumbContainer', '.sliderBubble', '.in-player-preview',
-      // Generic catch-all
-      '.modal-container'
-    ];
-    if (noPlayZones.some(sel => e.target.closest(sel))) {
+    if (isInAnyZone(e.target, OVERLAY_PROTECTED_SELECTORS)) {
       e.preventDefault(); e.stopPropagation();
       clearTimeout(userScrollTimeout);
       currentScrollY = synopsisEl.scrollTop;
@@ -1161,19 +1208,7 @@ export function initPauseScreen(bootObserver) {
     // Ignore touch clicks (handled by touchend)
     if (e.pointerType === 'touch') return;
 
-    // Safe zones: elements that shouldn't trigger play/pause
-    const noPlayZones = [
-      '.ps-meta', '.ps-progress-wrap', '.ps-divider', '.ps-synopsis', '.ps-paused-badge',
-      '.videoOsdBottom', '.osdHeader', '.osdControls', '.header-player',
-      '.dialogBackdrop', '.dialogContainer', '.dialog', '.actionSheet',
-      '.upNextDialog', '.upNextContainer',
-      '.skip-button-container', '.skip-button',
-      '.playerStats-content', '.subtitleSync', '.subtitleSyncContainer',
-      '.syncPlayContainer',
-      '.chapterThumbContainer', '.sliderBubble', '.in-player-preview',
-      '.modal-container'
-    ];
-    if (noPlayZones.some(sel => e.target.closest(sel))) return;
+    if (isInAnyZone(e.target, CLICK_PROTECTED_SELECTORS)) return;
 
     // It was a click on the background — resume playback
     if (video && video.paused) {
@@ -1211,8 +1246,7 @@ export function initPauseScreen(bootObserver) {
     clearTimeout(mouseTimer); clearTimeout(touchReadyTimer); clearTimeout(resizeDebounce); clearTimeout(pauseShowTimer); clearTimeout(dismissTimer); clearTimeout(userScrollTimeout);
     document.removeEventListener('pointermove', onPointerMove); document.removeEventListener('touchstart', handleDismissTouch);
     overlay.removeEventListener('touchstart', onOverlayTouchStart); overlay.removeEventListener('touchend', onOverlayTouchEnd);
-    if (currentCroppedLogoUrl) URL.revokeObjectURL(currentCroppedLogoUrl);
-    imgBlobCache.clear(); itemCache.clear(); overlay.remove();
+    imgBlobCache.clear(); itemCache.clear(); themeColorCache.clear(); overlay.remove();
     const styleTag = document.getElementById('pause-overlay-style');
     if (styleTag) styleTag.remove();
   }

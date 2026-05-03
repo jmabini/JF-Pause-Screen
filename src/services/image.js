@@ -83,31 +83,12 @@ function hslToRgbNorm(h, s, l) {
 
 export function applyThemeColor(overlay, rgbArray) {
   if (!rgbArray) {
-    overlay.style.setProperty('--theme-color', 'rgba(255,255,255,0.3)');
     overlay.style.setProperty('--theme-progress', 'rgba(255,255,255,0.9)');
-    overlay.style.setProperty('--theme-glow', 'transparent');
-    overlay.style.setProperty('--theme-glow-raw', 'transparent');
-    const alpha = CONFIG.dropshadowAlpha ?? 1;
-    overlay.style.setProperty('--theme-drop-shadow', `rgba(0,0,0,${alpha})`);
     return;
   }
 
-  let [rawR, rawG, rawB] = rgbArray;
-  
-  if (CONFIG.enableDynamicDropshadow) {
-    const dsExposure = CONFIG.dropshadowExposureAmount ?? 0.50;
-    const alpha = CONFIG.dropshadowAlpha ?? 1;
-    overlay.style.setProperty('--theme-drop-shadow', `rgba(${Math.round(rawR * dsExposure)}, ${Math.round(rawG * dsExposure)}, ${Math.round(rawB * dsExposure)}, ${alpha})`);
-  } else {
-    const alpha = CONFIG.dropshadowAlpha ?? 1;
-    overlay.style.setProperty('--theme-drop-shadow', `rgba(0,0,0,${alpha})`);
-  }
-
   if (!CONFIG.enableThemeColor) {
-    overlay.style.setProperty('--theme-color', 'rgba(255,255,255,0.3)');
     overlay.style.setProperty('--theme-progress', 'rgba(255,255,255,0.9)');
-    overlay.style.setProperty('--theme-glow', 'transparent');
-    overlay.style.setProperty('--theme-glow-raw', 'transparent');
     return;
   }
 
@@ -165,13 +146,7 @@ export function applyThemeColor(overlay, rgbArray) {
   }
 
   const finalRgb = `rgb(${Math.round(rNew * 255)}, ${Math.round(gNew * 255)}, ${Math.round(bNew * 255)})`;
-  const finalGlow = `rgba(${Math.round(rNew * 255)}, ${Math.round(gNew * 255)}, ${Math.round(bNew * 255)}, 0.80)`;
-  const rawGlow = `rgba(${rawR}, ${rawG}, ${rawB}, 0.80)`;
-
-  overlay.style.setProperty('--theme-color', finalRgb);
   overlay.style.setProperty('--theme-progress', finalRgb);
-  overlay.style.setProperty('--theme-glow', finalGlow);
-  overlay.style.setProperty('--theme-glow-raw', rawGlow);
 }
 
 export function isPortrait() { return window.matchMedia('(orientation: portrait)').matches; }
