@@ -1,0 +1,241 @@
+\n  @keyframes ps-spin-ls { from { transform: rotate(0deg); }
+ to { transform: rotate(360deg); }
+ }
+\n  @media (prefers-reduced-motion: reduce) { #pause-overlay .ps-disc { animation: none !important; }
+ }
+\n  #pause-overlay *::-webkit-scrollbar { display: none; }
+ #pause-overlay * { box-sizing: border-box; }
+\n  \n  #pause-overlay .ps-backdrop-bg, #pause-overlay .ps-backdrop-fg { position: absolute; inset: 0; background-color: #000; background-size: cover; background-position: center; filter: brightness(${e.backdropBrightness}
+); transform: translateZ(0); will-change: opacity, filter, transform; }
+\n  #pause-overlay .ps-backdrop-fg { opacity: 0; }
+\n  #pause-overlay .ps-backdrop-bg.ps-blurred, #pause-overlay .ps-backdrop-fg.ps-blurred { filter: brightness(${e.backdropBrightness}
+) blur(25px); transform: scale(1.2); }
+\n  \n  #pause-overlay .ps-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,${e.vignetteOpacity}
+) 100%); pointer-events: none; }
+\n  #pause-overlay .ps-layout { position: absolute; top: ${n.desktop.top}
+vh; left: ${n.desktop.left}
+vw; right: ${n.desktop.right}
+vw; bottom: calc(${n.desktop.bottom}
+vh + env(safe-area-inset-bottom, 0px)); display: flex; gap: 6vw; flex-direction: row; }
+\n  @supports (height: 100dvh) { #pause-overlay .ps-layout { top: ${n.largeScreen.top}
+dvh; bottom: calc(${n.largeScreen.bottom}
+dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n  \n  #pause-overlay .ps-left { flex: 7; display: flex; flex-direction: column; justify-content: center; overflow: visible; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 0; height: 100%; }
+\n  #pause-overlay .ps-right { flex: 3; display: flex; justify-content: center; align-items: center; position: relative; }
+\n  \n  #pause-overlay .ps-logo { display: none; max-width: 30vw; height: auto; max-height: clamp(100px, 18vh, 240px); object-fit: contain; object-position: left; margin-bottom: 2vh; flex-shrink: 0; }
+\n  \n  #pause-overlay .ps-title { display: none; font-size: ${t.desktop.title}
+; font-weight: 700; line-height: 1.05; letter-spacing: -0.01em; color: white; ${s}
+ margin-bottom: 1.2vh; flex-shrink: 0; padding: 4px; margin-left: -4px; margin-top: -4px; overflow-wrap: anywhere; word-break: break-word; }
+\n  #pause-overlay .ps-episode { display: none; font-size: ${t.desktop.episode}
+; font-weight: 600; letter-spacing: 0.01em; color: rgba(255,255,255,0.85); ${s}
+ margin-bottom: 1.2vh; flex-shrink: 0; padding: 4px; margin-left: -4px; margin-top: -4px; overflow-wrap: anywhere; word-break: break-word; }
+\n  #pause-overlay .ps-meta { display: flex; align-items: center; gap: 1vw; flex-wrap: nowrap; margin-bottom: 0; flex-shrink: 0; font-size: ${t.desktop.meta}
+; color: rgba(255,255,255,0.65); letter-spacing: 0.015em; ${s}
+ width: 100%; min-width: 0; padding: 4px; margin-left: -4px; margin-top: -4px; white-space: nowrap; }
+\n  #pause-overlay .ps-meta > span { white-space: nowrap; flex-shrink: 1; min-width: 0; }
+ \n  #pause-overlay .ps-meta .ps-genres { overflow: hidden; text-overflow: ellipsis; flex-shrink: 3; padding: 10px 0; margin: -10px 0; }
+\n  #pause-overlay .ps-rating-badge { border: 1px solid rgba(255,255,255,0.4); border-radius: 2px; flex-shrink: 0; font-weight: 500; font-size: ${t.desktop.ratingBadge}
+; padding: 0.15vh 0.5vw; }
+\n  \n  #pause-overlay .ps-divider { width: 40px; height: 1.5px; background: var(--theme-color, rgba(255,255,255,0.3)); box-shadow: 0 0 20px var(--theme-glow, transparent), 0 0 40px var(--theme-glow, transparent); margin: 2vh 0; flex-shrink: 0; border-radius: 1px; transition: background-color 2s ease, box-shadow 2s ease; }
+\n  \n  #pause-overlay .ps-synopsis { padding: 0 20px; margin: 0 -20px; font-size: ${t.desktop.synopsis}
+; line-height: 1.5; color: rgba(255,255,255,0.92); flex: 0 1 auto; min-height: 0; max-height: 100%; ${s}
+ position: relative; overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-y; overflow-wrap: anywhere; word-break: break-word; }
+\n  \n  #pause-overlay .ps-disc { display: none; width: 100%; max-height: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 50%; animation: ps-spin-ls var(--disc-spin-speed, 60s) linear infinite; filter: brightness(0.85) drop-shadow(0 8px 16px rgba(0,0,0,0.4)) drop-shadow(0 0 80px var(--theme-glow-raw, transparent)); transition: filter 2s ease; }
+\n  @media (orientation: landscape) { #pause-overlay .ps-disc { display: block; }
+ }
+ @media (orientation: portrait) { #pause-overlay .ps-disc { display: none !important; }
+ }
+\n  #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${g}
+); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: ${v}
+; line-height: 1; letter-spacing: ${f}
+em; text-transform: uppercase; background: rgba(255,255,255,${i}
+); border: 1px solid rgba(255,255,255,${c}
+); box-shadow: 0 2px 16px rgba(0,0,0,0.12); -webkit-backdrop-filter: blur(${r}
+px) brightness(${l}
+) saturate(${p}
+); backdrop-filter: blur(${r}
+px) brightness(${l}
+) saturate(${p}
+); }
+\n  #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${g}
+); text-shadow: 0 1px 3px rgba(0,0,0,0.30); }
+\n  #pause-overlay .ps-paused-badge::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; background: linear-gradient(${u}
+deg, rgba(255,255,255,${m}
+) 0%, rgba(255,255,255,${.4*m}
+) ${w}
+%, transparent ${y}
+%); }
+\n  #pause-overlay .ps-paused-badge::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; box-shadow: inset ${$}
+px ${M}
+px ${k}
+px ${S}
+px rgba(${x}
+,${T}
+), inset ${B}
+px ${E}
+px ${L}
+px ${C}
+px rgba(${x}
+,${P}
+), inset 0 1px 0 rgba(255,255,255,${d}
+); }
+\n  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pause-overlay .ps-paused-badge { background: rgba(180,185,190,0.42); }
+ }
+\n  #pause-overlay .ps-paused-badge-landscape { left: 50%; top: var(--pause-badge-top, 50%); transform: translate(-50%, -50%); width: var(--pause-badge-landscape-width, 220px); max-width: 100%; height: var(--pause-badge-landscape-height, 64px); padding: 0 1.1em; font-size: clamp(${16+b}
+px, 1.5vw, ${48+b}
+px); }
+\n  #pause-overlay .ps-paused-badge-portrait { left: 50%; bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: var(--pause-badge-portrait-width, 220px); max-width: calc(100vw - 32px); height: var(--pause-badge-portrait-height, 64px); padding: 0 0.95em; font-size: clamp(${20+b}
+px, 2.5vw, ${40+b}
+px); }
+\n  @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(12dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n  @media (orientation: landscape) { #pause-overlay .ps-paused-badge-landscape { display: flex; }
+ #pause-overlay .ps-paused-badge-portrait { display: none !important; }
+ }
+\n  @media (orientation: portrait) { #pause-overlay .ps-paused-badge-landscape { display: none !important; }
+ #pause-overlay .ps-paused-badge-portrait { display: flex; }
+ }
+\n  \n  #pause-overlay .ps-progress-wrap { position: absolute; bottom: calc(7vh + env(safe-area-inset-bottom, 0px)); left: ${n.desktop.left}
+vw; right: ${n.desktop.right}
+vw; }
+\n  @supports (height: 100dvh) { #pause-overlay .ps-progress-wrap { bottom: calc(7dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n  #pause-overlay .ps-progress-track { position: relative; width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin-bottom: 1vh; }
+\n  #pause-overlay .ps-progress-fill { height: 100%; background: var(--theme-progress, rgba(255,255,255,0.9)); border-radius: 2px; width: 0%; transition: width 0.25s ease, background-color 2s ease; }
+\n  #pause-overlay .ps-progress-meta { display: flex; gap: 0.8vw; align-items: center; font-family: inherit; font-size: ${t.desktop.progressMeta}
+; color: rgba(255,255,255,0.65); ${s}
+ }
+\n\n  #pause-overlay .ps-close-btn { position: absolute; top: max(2vh, env(safe-area-inset-top, 0px)); right: max(3vw, env(safe-area-inset-right, 0px)); width: 44px; height: 44px; background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.4); border-radius: 50%; color: rgba(255,255,255,0.85); font-size: 20px; display: flex; justify-content: center; align-items: center; z-index: 2147483647; pointer-events: auto; backdrop-filter: blur(4px); font-family: sans-serif; font-weight: 300; touch-action: manipulation; }
+\n  @media (pointer: fine) { #pause-overlay .ps-close-btn { display: none !important; }
+ }
+ \n\n  @media (orientation: portrait) {\n    #pause-overlay .ps-layout { flex-direction: column; gap: 2.5vh; top: calc(${n.portraitTablet.top}
+vh + env(safe-area-inset-top, 0px)); bottom: calc(${n.portraitTablet.bottom}
+vh + env(safe-area-inset-bottom, 0px)); }
+\n    @supports (height: 100dvh) { #pause-overlay .ps-layout { top: calc(${n.portraitTablet.top}
+dvh + env(safe-area-inset-top, 0px)); bottom: calc(${n.portraitTablet.bottom}
+dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n    #pause-overlay .ps-right { display: none !important; position: absolute; visibility: hidden; }
+\n    #pause-overlay .ps-left { flex: 1; min-height: 0; height: 100%; justify-content: flex-start; padding-bottom: clamp(88px, 12vh, 150px); }
+\n    #pause-overlay .ps-logo { max-width: 80vw; }
+ \n    #pause-overlay .ps-progress-meta { justify-content: center; text-align: center; width: 100%; }
+\n    #pause-overlay .ps-progress-wrap { bottom: calc(6vh + env(safe-area-inset-bottom, 0px)); }
+\n  }
+\n  \n  @media (orientation: portrait) and (max-width: 600px) {\n    #pause-overlay .ps-layout, #pause-overlay .ps-progress-wrap { left: calc(${n.portraitPhone.left}
+vw + env(safe-area-inset-left, 0px)); right: calc(${n.portraitPhone.right}
+vw + env(safe-area-inset-right, 0px)); }
+\n    #pause-overlay .ps-layout { top: calc(${n.portraitPhone.top}
+vh + env(safe-area-inset-top, 0px)); bottom: calc(${n.portraitPhone.bottom}
+vh + env(safe-area-inset-bottom, 0px)); gap: 1vh; }
+\n    @supports (height: 100dvh) { #pause-overlay .ps-layout { top: calc(${n.portraitPhone.top}
+dvh + env(safe-area-inset-top, 0px)); bottom: calc(${n.portraitPhone.bottom}
+dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n    \n    #pause-overlay .ps-logo { width: 100% !important; max-width: 100% !important; height: auto !important; max-height: 23vh !important; object-fit: contain !important; object-position: left center !important; margin: 0 0 1.5vh 0 !important; flex: 0 0 auto !important; }
+\n    #pause-overlay .ps-title { font-size: ${t.phonePortrait.title}
+; margin-bottom: 0.7vh; letter-spacing: -0.02em; }
+\n    #pause-overlay .ps-episode { font-size: ${t.phonePortrait.episode}
+; margin-bottom: 0.7vh; font-weight: 500; }
+\n    #pause-overlay .ps-meta { font-size: ${t.phonePortrait.meta}
+; gap: 2vw; }
+\n    #pause-overlay .ps-rating-badge { font-size: ${t.phonePortrait.ratingBadge}
+; padding: 0.25vh 1.2vw; }
+\n    #pause-overlay .ps-divider { margin: 2vh 0; width: 36px; }
+\n    #pause-overlay .ps-synopsis { font-size: ${t.phonePortrait.synopsis}
+; line-height: 1.45; }
+\n    #pause-overlay .ps-paused-badge-portrait { bottom: calc(11.5vh + env(safe-area-inset-bottom, 0px)); font-size: clamp(26px, 5.4vw, 42px); }
+\n    @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(11.5dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n    #pause-overlay .ps-progress-wrap { bottom: calc(5vh + env(safe-area-inset-bottom, 0px)); }
+\n    @supports (height: 100dvh) { #pause-overlay .ps-progress-wrap { bottom: calc(5dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n    #pause-overlay .ps-progress-meta { font-size: ${t.phonePortrait.progressMeta}
+; }
+\n  }
+\n  @media (orientation: portrait) and (min-width: 601px) and (max-width: 1024px) {\n    #pause-overlay .ps-layout, #pause-overlay .ps-progress-wrap { left: calc(${n.portraitTablet.left}
+vw + env(safe-area-inset-left, 0px)); right: calc(${n.portraitTablet.right}
+vw + env(safe-area-inset-right, 0px)); }
+\n    #pause-overlay .ps-title { font-size: ${t.tabletPortrait.title}
+; }
+\n    #pause-overlay .ps-episode { font-size: ${t.tabletPortrait.episode}
+; }
+\n    #pause-overlay .ps-meta { font-size: ${t.tabletPortrait.meta}
+; }
+\n    #pause-overlay .ps-rating-badge { font-size: ${t.tabletPortrait.ratingBadge}
+; padding: 0.25vh 1vw; }
+\n    #pause-overlay .ps-synopsis { font-size: ${t.tabletPortrait.synopsis}
+; }
+\n    #pause-overlay .ps-paused-badge-portrait { bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); font-size: clamp(24px, 2.8vw, 44px); }
+\n    @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(12dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n    #pause-overlay .ps-progress-meta { font-size: ${t.tabletPortrait.progressMeta}
+; }
+\n  }
+\n  @media (orientation: landscape) and (max-height: 500px) {\n    #pause-overlay .ps-layout, #pause-overlay .ps-progress-wrap { left: calc(${n.landscapePhone.left}
+vw + env(safe-area-inset-left, 0px)); right: calc(${n.landscapePhone.right}
+vw + env(safe-area-inset-right, 0px)); }
+\n    #pause-overlay .ps-layout { top: ${n.landscapePhone.top}
+vh; bottom: calc(${n.landscapePhone.bottom}
+vh + env(safe-area-inset-bottom, 0px)); gap: 3vw; }
+\n    #pause-overlay .ps-left { flex: 7; min-height: 0; overflow: hidden; }
+\n    #pause-overlay .ps-right { flex: 3; margin: 2.5vh 0 2.5vh 2.5vw; }
+\n    #pause-overlay .ps-title { font-size: ${t.phoneLandscape.title}
+; }
+\n    #pause-overlay .ps-episode { font-size: ${t.phoneLandscape.episode}
+; }
+\n    #pause-overlay .ps-meta { font-size: ${t.phoneLandscape.meta}
+; }
+\n    #pause-overlay .ps-rating-badge { font-size: ${t.phoneLandscape.ratingBadge}
+; padding: 1px 4px; }
+\n    #pause-overlay .ps-divider { margin: 2.5vh 0; }
+\n    #pause-overlay .ps-synopsis { font-size: ${t.phoneLandscape.synopsis}
+; }
+\n    #pause-overlay .ps-disc { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+\n    #pause-overlay .ps-progress-wrap { bottom: calc(4vh + env(safe-area-inset-bottom, 0px)); }
+\n    #pause-overlay .ps-progress-meta { font-size: ${t.phoneLandscape.progressMeta}
+; }
+\n  }
+\n  @media (orientation: landscape) and (min-height: 501px) and (pointer: coarse) {\n    #pause-overlay .ps-layout, #pause-overlay .ps-progress-wrap { left: calc(${n.landscapeTablet.left}
+vw + env(safe-area-inset-left, 0px)); right: calc(${n.landscapeTablet.right}
+vw + env(safe-area-inset-right, 0px)); }
+\n    #pause-overlay .ps-layout { top: ${n.landscapeTablet.top}
+vh; bottom: calc(${n.landscapeTablet.bottom}
+vh + env(safe-area-inset-bottom, 0px)); gap: 5vw; }
+\n    #pause-overlay .ps-left { flex: 7; min-height: 0; overflow: hidden; }
+\n    #pause-overlay .ps-right { flex: 3; }
+\n    #pause-overlay .ps-title { font-size: ${t.tabletLandscape.title}
+; }
+\n    #pause-overlay .ps-episode { font-size: ${t.tabletLandscape.episode}
+; }
+\n    #pause-overlay .ps-meta { font-size: ${t.tabletLandscape.meta}
+; gap: 0.6vw; }
+\n    #pause-overlay .ps-rating-badge { font-size: ${t.tabletLandscape.ratingBadge}
+; padding: 0.2vh 0.6vw; }
+\n    #pause-overlay .ps-synopsis { font-size: ${t.tabletLandscape.synopsis}
+; line-height: 1.5; }
+\n    #pause-overlay .ps-disc { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+\n    #pause-overlay .ps-progress-wrap { bottom: calc(6vh + env(safe-area-inset-bottom, 0px)); }
+\n    #pause-overlay .ps-progress-meta { font-size: ${t.tabletLandscape.progressMeta}
+; }
+\n  }
+\n  @media (orientation: landscape) {\n    #pause-overlay .ps-layout { display: grid; grid-template-columns: minmax(0, ${a.left}
+fr) minmax(0, ${a.right}
+fr); gap: clamp(16px, 1.5vw, 32px); align-items: stretch; }
+\n    #pause-overlay .ps-left { justify-content: flex-start; align-self: stretch; min-width: 0; overflow: hidden; }
+\n    #pause-overlay .ps-right { display: flex; align-self: stretch; justify-content: center; align-items: center; margin: 0; min-width: 0; min-height: 0; overflow: visible; }
+\n    #pause-overlay .ps-logo { align-self: flex-start; width: min(100%, 30vw); max-width: 100%; max-height: clamp(180px, 24vh, 340px); object-fit: contain; object-position: left top; margin: 0 0 1.5vh 0; }
+\n    #pause-overlay .ps-synopsis { max-width: 100%; }
+\n    #pause-overlay .ps-disc { width: 100%; max-width: 100%; height: auto; max-height: 100%; aspect-ratio: 1 / 1; object-position: center; }
+\n  }
+\n  @media (orientation: landscape) and (pointer: fine) {\n    #pause-overlay .ps-layout { top: 6vh; bottom: calc(14vh + env(safe-area-inset-bottom, 0px)); }
+\n    @supports (height: 100dvh) { #pause-overlay .ps-layout { top: 6dvh; bottom: calc(14dvh + env(safe-area-inset-bottom, 0px)); }
+ }
+\n  }
+\n\n  /* CHAPTER TICKS */\n  #pause-overlay .ps-chapter-ticks { position: absolute; top: 0; left: 0; right: 0; height: 100%; pointer-events: none; overflow: hidden; border-radius: 2px; }
+\n  #pause-overlay .ps-chapter-tick { position: absolute; top: 0; width: 2px; height: 100%; background: rgba(255,255,255,0.55); border-radius: 1px; transform: translateX(-50%); transition: background-color 0.2s, filter 0.2s; }
+\n  #pause-overlay .ps-chapter-tick.ps-past { background: var(--theme-color, rgba(255,255,255,0.55)); filter: brightness(0.5); }
+\n\n  /* SCREENSAVER / IDLE MODE */\n  #pause-overlay .ps-screensaver-logo { display: none; position: fixed; pointer-events: none; z-index: 2147483647; opacity: 0; transition: opacity 1.2s ease; left: 0; top: 0; will-change: transform; object-fit: contain; }
+\n  #pause-overlay.ps-screensaver .ps-screensaver-logo { display: block; }
+\n  #pause-overlay.ps-screensaver .ps-layout,\n  #pause-overlay.ps-screensaver .ps-progress-wrap,\n  #pause-overlay.ps-screensaver .ps-paused-badge,\n  #pause-overlay.ps-screensaver .ps-close-btn { opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+\n  
