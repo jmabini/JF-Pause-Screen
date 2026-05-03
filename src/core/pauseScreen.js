@@ -200,6 +200,7 @@ export function initPauseScreen(bootObserver) {
       const leftCol = overlay.querySelector('.ps-left');
       const availableHeight = Math.max(0, leftCol.getBoundingClientRect().bottom - synopsisEl.getBoundingClientRect().top - SY.descenderGuardPx);
       const synopsisWidth = synopsisEl.getBoundingClientRect().width;
+      syncPauseBadgeSizing();
       let maxSize, minSize;
 
       if (portrait) {
@@ -256,6 +257,31 @@ export function initPauseScreen(bootObserver) {
     } finally {
       requestAnimationFrame(() => { isAdjusting = false; if (currentItemId === expectedItemId) startScrollAnimation(); });
     }
+  }
+
+  function syncPauseBadgeSizing() {
+    const badgeConfig = CONFIG.pauseBadge || {};
+    const discRect = discEl.getBoundingClientRect();
+    const rightWidth = discRect.width || rightCol.getBoundingClientRect().width || 0;
+    const rightHeight = discRect.height || rightWidth;
+    
+    const landscapeWidthPct = badgeConfig.landscapeWidthPctOfDisc || 40;
+    const landscapeHeightPct = badgeConfig.landscapeHeightPctOfDisc || 11.5;
+    const landscapeWidth = rightWidth * landscapeWidthPct / 100;
+    const landscapeHeight = rightHeight * landscapeHeightPct / 100;
+    
+    const isPhone = isPhonePortrait();
+    const portraitWidthPct = isPhone ? (badgeConfig.portraitPhoneWidthPct || 36) : (badgeConfig.portraitTabletWidthPct || 24);
+    const portraitHeightPct = isPhone ? (badgeConfig.portraitPhoneHeightPctOfVW || 10.7) : (badgeConfig.portraitTabletHeightPctOfVW || 7.1);
+    
+    const portraitWidth = window.innerWidth * portraitWidthPct / 100;
+    const portraitHeight = window.innerWidth * portraitHeightPct / 100;
+
+    overlay.style.setProperty('--pause-badge-landscape-width', `${Math.max(0, landscapeWidth)}px`);
+    overlay.style.setProperty('--pause-badge-landscape-height', `${Math.max(0, landscapeHeight)}px`);
+    overlay.style.setProperty('--pause-badge-portrait-width', `${Math.max(0, portraitWidth)}px`);
+    overlay.style.setProperty('--pause-badge-portrait-height', `${Math.max(0, portraitHeight)}px`);
+    overlay.style.setProperty('--pause-badge-top', `${badgeConfig.landscapeTopPct || 50}%`);
   }
 
   function parsePx(val) { const n = parseFloat(val); return isNaN(n) ? 20 : (String(val).trim().endsWith('vw') ? n * window.innerWidth / 100 : n); }
@@ -885,6 +911,8 @@ export function initPauseScreen(bootObserver) {
     // Covers: dialogHelper modals, action sheets, Up Next, Skip buttons,
     // playback stats, subtitle sync, SyncPlay, chapter previews, slider bubbles
     const safeZones = [
+      // Custom pause badge
+      '.ps-paused-badge',
       // dialogHelper system (settings, audio/subtitle pickers, all plugin dialogs)
       '.dialogBackdrop', '.dialogContainer', '.dialog',
       // Action sheets (subtitle/audio track selection, settings menu)
@@ -1082,7 +1110,7 @@ export function initPauseScreen(bootObserver) {
     // ── INTERACTIVE ELEMENTS & MODALS: never play ──
     const noPlayZones = [
       // Our own UI elements
-      '.ps-meta', '.ps-progress-wrap', '.ps-divider',
+      '.ps-meta', '.ps-progress-wrap', '.ps-divider', '.ps-paused-badge',
       // OSD controls
       '.videoOsdBottom', '.osdHeader', '.osdControls', '.header-player',
       // dialogHelper system
@@ -1135,7 +1163,7 @@ export function initPauseScreen(bootObserver) {
 
     // Safe zones: elements that shouldn't trigger play/pause
     const noPlayZones = [
-      '.ps-meta', '.ps-progress-wrap', '.ps-divider', '.ps-synopsis',
+      '.ps-meta', '.ps-progress-wrap', '.ps-divider', '.ps-synopsis', '.ps-paused-badge',
       '.videoOsdBottom', '.osdHeader', '.osdControls', '.header-player',
       '.dialogBackdrop', '.dialogContainer', '.dialog', '.actionSheet',
       '.upNextDialog', '.upNextContainer',

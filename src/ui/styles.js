@@ -17,8 +17,38 @@ import { CONFIG } from '../config.js';
 })();
 
 export function getStyles() {
-  const F = CONFIG.fonts, M = CONFIG.margins;
+  const F = CONFIG.fonts, M = CONFIG.margins, LC = CONFIG.landscapeColumns, PB = CONFIG.pauseBadge || {};
   const TS = `text-shadow: ${CONFIG.enableTextShadow ? CONFIG.textShadowDefinition : 'none'};`;
+  // --- Figma Glass parameters ---
+  const frost = Number.isFinite(PB.frostBlurPx) ? PB.frostBlurPx : 8;
+  const glassTint = Number.isFinite(PB.glassTint) ? PB.glassTint : 0.1;
+  const glassBrightness = Number.isFinite(PB.glassBrightness) ? PB.glassBrightness : 1.08;
+  const glassSaturation = Number.isFinite(PB.glassSaturation) ? PB.glassSaturation : 1.15;
+  const borderOpacity = Number.isFinite(PB.borderOpacity) ? PB.borderOpacity : 0.25;
+  const rimHighlightOpacity = Number.isFinite(PB.rimHighlightOpacity) ? PB.rimHighlightOpacity : 0.18;
+  const lightAngle = Number.isFinite(PB.lightAngleDeg) ? PB.lightAngleDeg : 135;
+  const lightIntensity = Number.isFinite(PB.lightIntensity) ? PB.lightIntensity : 0.1;
+  const splayPct = Number.isFinite(PB.splayPct) ? PB.splayPct : 83;
+  const fontOpacity = Number.isFinite(PB.fontOpacity) ? PB.fontOpacity : 0.65;
+  const trackingEm = Number.isFinite(PB.trackingEm) ? PB.trackingEm : 0.15;
+  const fontWeight = Number.isFinite(PB.fontWeight) ? PB.fontWeight : 400;
+  const fontSizeOffsetPx = Number.isFinite(PB.fontSizeOffsetPx) ? PB.fontSizeOffsetPx : 0;
+  
+  const splayStop = Math.min(100, splayPct);
+  const lightFadeStop = Math.max(0, splayStop - 20);
+
+  const igBotColor = PB.innerGlowBRColor || "255,255,255";
+  const igBotOp = Number.isFinite(PB.innerGlowBROpacity) ? PB.innerGlowBROpacity : 0.18;
+  const igBotBlur = Number.isFinite(PB.innerGlowBRBlur) ? PB.innerGlowBRBlur : 12;
+  const igBotSpread = Number.isFinite(PB.innerGlowBRSpread) ? PB.innerGlowBRSpread : 2;
+  const igBotX = Number.isFinite(PB.innerGlowBROffsetX) ? PB.innerGlowBROffsetX : 3;
+  const igBotY = Number.isFinite(PB.innerGlowBROffsetY) ? PB.innerGlowBROffsetY : 3;
+
+  const igTopOp = Number.isFinite(PB.innerGlowTLOpacity) ? PB.innerGlowTLOpacity : 0.09;
+  const igTopBlur = Number.isFinite(PB.innerGlowTLBlur) ? PB.innerGlowTLBlur : 6;
+  const igTopSpread = Number.isFinite(PB.innerGlowTLSpread) ? PB.innerGlowTLSpread : 1;
+  const igTopX = Number.isFinite(PB.innerGlowTLOffsetX) ? PB.innerGlowTLOffsetX : -2;
+  const igTopY = Number.isFinite(PB.innerGlowTLOffsetY) ? PB.innerGlowTLOffsetY : -2;
 
   return `
   @keyframes ps-spin-ls { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -51,6 +81,16 @@ export function getStyles() {
   
   #pause-overlay .ps-disc { display: none; width: 100%; max-height: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 50%; animation: ps-spin-ls var(--disc-spin-speed, 60s) linear infinite; filter: brightness(0.85) drop-shadow(0 8px 16px rgba(0,0,0,0.4)) drop-shadow(0 0 80px var(--theme-glow-raw, transparent)); transition: filter 2s ease; }
   @media (orientation: landscape) { #pause-overlay .ps-disc { display: block; } } @media (orientation: portrait) { #pause-overlay .ps-disc { display: none !important; } }
+  #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${fontOpacity}); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: ${fontWeight}; line-height: 1; letter-spacing: ${trackingEm}em; text-transform: uppercase; background: rgba(255,255,255,${glassTint}); border: 1px solid rgba(255,255,255,${borderOpacity}); box-shadow: 0 2px 16px rgba(0,0,0,0.12); -webkit-backdrop-filter: blur(${frost}px) brightness(${glassBrightness}) saturate(${glassSaturation}); backdrop-filter: blur(${frost}px) brightness(${glassBrightness}) saturate(${glassSaturation}); }
+  #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${fontOpacity}); text-shadow: 0 1px 3px rgba(0,0,0,0.30); }
+  #pause-overlay .ps-paused-badge::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; background: linear-gradient(${lightAngle}deg, rgba(255,255,255,${lightIntensity}) 0%, rgba(255,255,255,${0.4*lightIntensity}) ${lightFadeStop}%, transparent ${splayStop}%); }
+  #pause-overlay .ps-paused-badge::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; box-shadow: inset ${igBotX}px ${igBotY}px ${igBotBlur}px ${igBotSpread}px rgba(${igBotColor},${igBotOp}), inset ${igTopX}px ${igTopY}px ${igTopBlur}px ${igTopSpread}px rgba(${igBotColor},${igTopOp}), inset 0 1px 0 rgba(255,255,255,${rimHighlightOpacity}); }
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pause-overlay .ps-paused-badge { background: rgba(180,185,190,0.42); } }
+  #pause-overlay .ps-paused-badge-landscape { left: 50%; top: var(--pause-badge-top, 50%); transform: translate(-50%, -50%); width: var(--pause-badge-landscape-width, 220px); max-width: 100%; height: var(--pause-badge-landscape-height, 64px); padding: 0 1.1em; font-size: clamp(${16+fontSizeOffsetPx}px, 1.5vw, ${48+fontSizeOffsetPx}px); }
+  #pause-overlay .ps-paused-badge-portrait { left: 50%; bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: var(--pause-badge-portrait-width, 220px); max-width: calc(100vw - 32px); height: var(--pause-badge-portrait-height, 64px); padding: 0 0.95em; font-size: clamp(${20+fontSizeOffsetPx}px, 2.5vw, ${40+fontSizeOffsetPx}px); }
+  @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(12dvh + env(safe-area-inset-bottom, 0px)); } }
+  @media (orientation: landscape) { #pause-overlay .ps-paused-badge-landscape { display: flex; } #pause-overlay .ps-paused-badge-portrait { display: none !important; } }
+  @media (orientation: portrait) { #pause-overlay .ps-paused-badge-landscape { display: none !important; } #pause-overlay .ps-paused-badge-portrait { display: flex; } }
   
   #pause-overlay .ps-progress-wrap { position: absolute; bottom: calc(7vh + env(safe-area-inset-bottom, 0px)); left: ${M.desktop.left}vw; right: ${M.desktop.right}vw; }
   @supports (height: 100dvh) { #pause-overlay .ps-progress-wrap { bottom: calc(7dvh + env(safe-area-inset-bottom, 0px)); } }
@@ -65,7 +105,7 @@ export function getStyles() {
     #pause-overlay .ps-layout { flex-direction: column; gap: 2.5vh; top: calc(${M.portraitTablet.top}vh + env(safe-area-inset-top, 0px)); bottom: calc(${M.portraitTablet.bottom}vh + env(safe-area-inset-bottom, 0px)); }
     @supports (height: 100dvh) { #pause-overlay .ps-layout { top: calc(${M.portraitTablet.top}dvh + env(safe-area-inset-top, 0px)); bottom: calc(${M.portraitTablet.bottom}dvh + env(safe-area-inset-bottom, 0px)); } }
     #pause-overlay .ps-right { display: none !important; position: absolute; visibility: hidden; }
-    #pause-overlay .ps-left { flex: 1; min-height: 0; height: 100%; justify-content: flex-start; }
+    #pause-overlay .ps-left { flex: 1; min-height: 0; height: 100%; justify-content: flex-start; padding-bottom: clamp(88px, 12vh, 150px); }
     #pause-overlay .ps-logo { max-width: 80vw; } 
     #pause-overlay .ps-progress-meta { justify-content: center; text-align: center; width: 100%; }
     #pause-overlay .ps-progress-wrap { bottom: calc(6vh + env(safe-area-inset-bottom, 0px)); }
@@ -83,6 +123,8 @@ export function getStyles() {
     #pause-overlay .ps-rating-badge { font-size: ${F.phonePortrait.ratingBadge}; padding: 0.25vh 1.2vw; }
     #pause-overlay .ps-divider { margin: 2vh 0; width: 36px; }
     #pause-overlay .ps-synopsis { font-size: ${F.phonePortrait.synopsis}; line-height: 1.45; }
+    #pause-overlay .ps-paused-badge-portrait { bottom: calc(11.5vh + env(safe-area-inset-bottom, 0px)); font-size: clamp(26px, 5.4vw, 42px); }
+    @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(11.5dvh + env(safe-area-inset-bottom, 0px)); } }
     #pause-overlay .ps-progress-wrap { bottom: calc(5vh + env(safe-area-inset-bottom, 0px)); }
     @supports (height: 100dvh) { #pause-overlay .ps-progress-wrap { bottom: calc(5dvh + env(safe-area-inset-bottom, 0px)); } }
     #pause-overlay .ps-progress-meta { font-size: ${F.phonePortrait.progressMeta}; }
@@ -94,6 +136,8 @@ export function getStyles() {
     #pause-overlay .ps-meta { font-size: ${F.tabletPortrait.meta}; }
     #pause-overlay .ps-rating-badge { font-size: ${F.tabletPortrait.ratingBadge}; padding: 0.25vh 1vw; }
     #pause-overlay .ps-synopsis { font-size: ${F.tabletPortrait.synopsis}; }
+    #pause-overlay .ps-paused-badge-portrait { bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); font-size: clamp(24px, 2.8vw, 44px); }
+    @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(12dvh + env(safe-area-inset-bottom, 0px)); } }
     #pause-overlay .ps-progress-meta { font-size: ${F.tabletPortrait.progressMeta}; }
   }
   @media (orientation: landscape) and (max-height: 500px) {
@@ -126,10 +170,16 @@ export function getStyles() {
     #pause-overlay .ps-progress-meta { font-size: ${F.tabletLandscape.progressMeta}; }
   }
   @media (orientation: landscape) {
-    #pause-overlay .ps-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 3fr); gap: clamp(16px, 1.5vw, 32px); }
-    #pause-overlay .ps-left { justify-content: flex-start; min-width: 0; }
-    #pause-overlay .ps-right { margin: 0; min-width: 0; }
-    #pause-overlay .ps-disc { width: 100%; max-width: 100%; height: auto; max-height: 100%; aspect-ratio: 1 / 1; }
+    #pause-overlay .ps-layout { display: grid; grid-template-columns: minmax(0, ${LC.left}fr) minmax(0, ${LC.right}fr); gap: clamp(16px, 1.5vw, 32px); align-items: stretch; }
+    #pause-overlay .ps-left { justify-content: flex-start; align-self: stretch; min-width: 0; overflow: hidden; }
+    #pause-overlay .ps-right { display: flex; align-self: stretch; justify-content: center; align-items: center; margin: 0; min-width: 0; min-height: 0; overflow: visible; }
+    #pause-overlay .ps-logo { align-self: flex-start; width: min(100%, 30vw); max-width: 100%; max-height: clamp(180px, 24vh, 340px); object-fit: contain; object-position: left top; margin: 0 0 1.5vh 0; }
+    #pause-overlay .ps-synopsis { max-width: 100%; }
+    #pause-overlay .ps-disc { width: 100%; max-width: 100%; height: auto; max-height: 100%; aspect-ratio: 1 / 1; object-position: center; }
+  }
+  @media (orientation: landscape) and (pointer: fine) {
+    #pause-overlay .ps-layout { top: 6vh; bottom: calc(14vh + env(safe-area-inset-bottom, 0px)); }
+    @supports (height: 100dvh) { #pause-overlay .ps-layout { top: 6dvh; bottom: calc(14dvh + env(safe-area-inset-bottom, 0px)); } }
   }
 
   /* CHAPTER TICKS */
@@ -142,6 +192,7 @@ export function getStyles() {
   #pause-overlay.ps-screensaver .ps-screensaver-logo { display: block; }
   #pause-overlay.ps-screensaver .ps-layout,
   #pause-overlay.ps-screensaver .ps-progress-wrap,
+  #pause-overlay.ps-screensaver .ps-paused-badge,
   #pause-overlay.ps-screensaver .ps-close-btn { opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
   `;
 }

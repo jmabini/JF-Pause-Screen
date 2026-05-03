@@ -7,7 +7,19 @@ export function createOverlay() {
   overlay.style.setProperty('transition', 'opacity 0.35s ease', 'important');
   overlay.style.setProperty('--disc-spin-speed', `${CONFIG.discSpinSeconds}s`);
 
+  // SVG refraction displacement filter — tiny inline definition referenced by badge CSS
+  const refractionScale = (CONFIG.pauseBadge?.refractionStrength ?? 1.0) * 18;
+
   overlay.innerHTML = `
+    <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+      <defs>
+        <filter id="ps-glass-refraction" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.018 0.012" numOctaves="3" seed="5" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="${refractionScale}" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+          <feGaussianBlur in="displaced" stdDeviation="0.4" />
+        </filter>
+      </defs>
+    </svg>
     <div class="ps-backdrop-bg"></div>
     <div class="ps-backdrop-fg"></div>
     <div class="ps-vignette"></div>
@@ -28,8 +40,10 @@ export function createOverlay() {
       </div>
       <div class="ps-right">
         <img class="ps-disc" data-has-disc="false" />
+        <div class="ps-paused-badge ps-paused-badge-landscape" aria-hidden="true"><span class="ps-paused-badge-text">PAUSED</span></div>
       </div>
     </div>
+    <div class="ps-paused-badge ps-paused-badge-portrait" aria-hidden="true"><span class="ps-paused-badge-text">PAUSED</span></div>
     <div class="ps-progress-wrap">
       <div class="ps-progress-track"><div class="ps-progress-fill"></div><div class="ps-chapter-ticks"></div></div>
       <div class="ps-progress-meta">

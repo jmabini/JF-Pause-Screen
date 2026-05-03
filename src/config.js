@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.7.1',
+  version: '3.10.12',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -58,11 +58,48 @@ export const CONFIG = {
   discSpinSeconds: 60,            // Duration (s) for a full 360 degree rotation
   blobCacheMaxSize: 20,           // Max number of processed images to keep in memory
 
+  pauseBadge: {
+    frostBlurPx: 3,
+    glassTint: 0.05,
+    glassBrightness: 1,
+    glassSaturation: 1,
+    borderOpacity: 0.5,
+    rimHighlightOpacity: 0.5,
+    lightAngleDeg: 135,
+    lightIntensity: 0.15,
+    splayPct: 55,
+    fontOpacity: 0.65,
+    trackingEm: 0.05,
+    fontWeight: 400,
+    fontSizeOffsetPx: -4,
+    landscapeTopPct: 50,
+    landscapeWidthPctOfDisc: 40,
+    landscapeHeightPctOfDisc: 11.5,
+    portraitPhoneWidthPct: 36,
+    portraitPhoneHeightPctOfVW: 10.7,
+    portraitTabletWidthPct: 24,
+    portraitTabletHeightPctOfVW: 7.1,
+    innerGlowTLOpacity: 0.35,
+    innerGlowTLBlur: 12,
+    innerGlowTLSpread: 6,
+    innerGlowTLOffsetX: -6,
+    innerGlowTLOffsetY: -4,
+    innerGlowBROpacity: 0.18,
+    innerGlowBRBlur: 12,
+    innerGlowBRSpread: 2,
+    innerGlowBROffsetX: 3,
+    innerGlowBROffsetY: 3,
+  },
+
   // LAYOUT
   genresMaxPhonePortrait: 1,      // Max genres shown on small mobile screens
   genresMaxDefault: 5,            // Max genres shown on tablets/desktop
   enableTextShadow: true,         // Toggle the global text dropshadow
   textShadowDefinition: "0 2px 4px rgba(0,0,0,0.6), 0 0 15px var(--theme-drop-shadow, rgba(0,0,0,1)), 0 0 40px var(--theme-drop-shadow, rgba(0,0,0,0.7))", // CSS shadow syntax
+  landscapeColumns: {
+    left: 5.45,                   // Relative width of the landscape text/logo column
+    right: 2.55,                  // Relative width of the landscape disc column
+  },
 
   // FONT SIZES (Using Viewport Width 'vw' for fluid scaling)
   fonts: {
