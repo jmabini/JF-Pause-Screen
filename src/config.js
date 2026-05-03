@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.10.6',
+  version: '3.10.12',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -58,25 +58,37 @@ export const CONFIG = {
   discSpinSeconds: 60,            // Duration (s) for a full 360 degree rotation
   blobCacheMaxSize: 20,           // Max number of processed images to keep in memory
 
-  // PAUSED BADGE — Figma Glass mapping
-  // Light: -45° / 80% · Refraction: 100 · Depth: 14 · Dispersion: 55 · Frost: 5 · Splay: 83
   pauseBadge: {
-    frostBlurPx: 2,               // Frost: 5 → nearly clear glass (low blur)
-    exposureReduction: 0.06,      // Minimal darkening to preserve glass clarity
-    lightAngleDeg: 135,           // Light: -45° → 135deg CSS gradient direction (upper-left source)
-    lightIntensity: 0.80,         // Light: 80% → highlight peak opacity
-    refractionStrength: 1.0,      // Refraction: 100 → SVG displacement map scale (0.0–1.0)
-    depthPx: 14,                  // Depth: 14 → inset shadow spread for 3D edge
-    dispersionPx: 1.0,            // Dispersion: 55 → chromatic fringe offset in px
-    dispersionOpacity: 0.18,      // Chromatic fringe layer visibility
-    splayPct: 83,                 // Splay: 83 → % of badge surface covered by highlight sweep
-    fontOpacity: 0.55,            // PAUSED label opacity (slightly lower for clear-glass look)
-    trackingEm: 0.15,             // Letter-spacing (wider to match Figma layout)
-    fontWeight: 400,              // Font weight (lighter for glass aesthetic)
-    landscapeTopPct: 62,          // Badge vertical position: % from top of .ps-right
-    landscapeWidthPctOfDisc: 46,  // Landscape badge width as a % of the disc/right art area
-    portraitPhoneWidthPct: 42,    // Phone portrait badge width as a % of viewport width
-    portraitTabletWidthPct: 28,   // Tablet portrait badge width as a % of viewport width
+    frostBlurPx: 3,
+    glassTint: 0.05,
+    glassBrightness: 1,
+    glassSaturation: 1,
+    borderOpacity: 0.5,
+    rimHighlightOpacity: 0.5,
+    lightAngleDeg: 135,
+    lightIntensity: 0.15,
+    splayPct: 55,
+    fontOpacity: 0.65,
+    trackingEm: 0.05,
+    fontWeight: 400,
+    fontSizeOffsetPx: -4,
+    landscapeTopPct: 50,
+    landscapeWidthPctOfDisc: 40,
+    landscapeHeightPctOfDisc: 11.5,
+    portraitPhoneWidthPct: 36,
+    portraitPhoneHeightPctOfVW: 10.7,
+    portraitTabletWidthPct: 24,
+    portraitTabletHeightPctOfVW: 7.1,
+    innerGlowTLOpacity: 0.35,
+    innerGlowTLBlur: 12,
+    innerGlowTLSpread: 6,
+    innerGlowTLOffsetX: -6,
+    innerGlowTLOffsetY: -4,
+    innerGlowBROpacity: 0.18,
+    innerGlowBRBlur: 12,
+    innerGlowBRSpread: 2,
+    innerGlowBROffsetX: 3,
+    innerGlowBROffsetY: 3,
   },
 
   // LAYOUT

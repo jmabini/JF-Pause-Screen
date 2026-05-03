@@ -20,19 +20,35 @@ export function getStyles() {
   const F = CONFIG.fonts, M = CONFIG.margins, LC = CONFIG.landscapeColumns, PB = CONFIG.pauseBadge || {};
   const TS = `text-shadow: ${CONFIG.enableTextShadow ? CONFIG.textShadowDefinition : 'none'};`;
   // --- Figma Glass parameters ---
-  const frost = Number.isFinite(PB.frostBlurPx) ? PB.frostBlurPx : 2;
-  const exposure = Number.isFinite(PB.exposureReduction) ? PB.exposureReduction : 0.06;
+  const frost = Number.isFinite(PB.frostBlurPx) ? PB.frostBlurPx : 8;
+  const glassTint = Number.isFinite(PB.glassTint) ? PB.glassTint : 0.1;
+  const glassBrightness = Number.isFinite(PB.glassBrightness) ? PB.glassBrightness : 1.08;
+  const glassSaturation = Number.isFinite(PB.glassSaturation) ? PB.glassSaturation : 1.15;
+  const borderOpacity = Number.isFinite(PB.borderOpacity) ? PB.borderOpacity : 0.25;
+  const rimHighlightOpacity = Number.isFinite(PB.rimHighlightOpacity) ? PB.rimHighlightOpacity : 0.18;
   const lightAngle = Number.isFinite(PB.lightAngleDeg) ? PB.lightAngleDeg : 135;
-  const lightInt = Number.isFinite(PB.lightIntensity) ? PB.lightIntensity : 0.80;
-  const depth = Number.isFinite(PB.depthPx) ? PB.depthPx : 14;
-  const dispPx = Number.isFinite(PB.dispersionPx) ? PB.dispersionPx : 1.0;
-  const dispOp = Number.isFinite(PB.dispersionOpacity) ? PB.dispersionOpacity : 0.18;
-  const splay = Number.isFinite(PB.splayPct) ? PB.splayPct : 83;
-  const fontOp = Number.isFinite(PB.fontOpacity) ? PB.fontOpacity : 0.55;
-  const tracking = Number.isFinite(PB.trackingEm) ? PB.trackingEm : 0.15;
-  const fontWt = Number.isFinite(PB.fontWeight) ? PB.fontWeight : 400;
-  const splayStop = Math.min(100, splay);
+  const lightIntensity = Number.isFinite(PB.lightIntensity) ? PB.lightIntensity : 0.1;
+  const splayPct = Number.isFinite(PB.splayPct) ? PB.splayPct : 83;
+  const fontOpacity = Number.isFinite(PB.fontOpacity) ? PB.fontOpacity : 0.65;
+  const trackingEm = Number.isFinite(PB.trackingEm) ? PB.trackingEm : 0.15;
+  const fontWeight = Number.isFinite(PB.fontWeight) ? PB.fontWeight : 400;
+  const fontSizeOffsetPx = Number.isFinite(PB.fontSizeOffsetPx) ? PB.fontSizeOffsetPx : 0;
+  
+  const splayStop = Math.min(100, splayPct);
   const lightFadeStop = Math.max(0, splayStop - 20);
+
+  const igBotColor = PB.innerGlowBRColor || "255,255,255";
+  const igBotOp = Number.isFinite(PB.innerGlowBROpacity) ? PB.innerGlowBROpacity : 0.18;
+  const igBotBlur = Number.isFinite(PB.innerGlowBRBlur) ? PB.innerGlowBRBlur : 12;
+  const igBotSpread = Number.isFinite(PB.innerGlowBRSpread) ? PB.innerGlowBRSpread : 2;
+  const igBotX = Number.isFinite(PB.innerGlowBROffsetX) ? PB.innerGlowBROffsetX : 3;
+  const igBotY = Number.isFinite(PB.innerGlowBROffsetY) ? PB.innerGlowBROffsetY : 3;
+
+  const igTopOp = Number.isFinite(PB.innerGlowTLOpacity) ? PB.innerGlowTLOpacity : 0.09;
+  const igTopBlur = Number.isFinite(PB.innerGlowTLBlur) ? PB.innerGlowTLBlur : 6;
+  const igTopSpread = Number.isFinite(PB.innerGlowTLSpread) ? PB.innerGlowTLSpread : 1;
+  const igTopX = Number.isFinite(PB.innerGlowTLOffsetX) ? PB.innerGlowTLOffsetX : -2;
+  const igTopY = Number.isFinite(PB.innerGlowTLOffsetY) ? PB.innerGlowTLOffsetY : -2;
 
   return `
   @keyframes ps-spin-ls { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -65,13 +81,13 @@ export function getStyles() {
   
   #pause-overlay .ps-disc { display: none; width: 100%; max-height: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 50%; animation: ps-spin-ls var(--disc-spin-speed, 60s) linear infinite; filter: brightness(0.85) drop-shadow(0 8px 16px rgba(0,0,0,0.4)) drop-shadow(0 0 80px var(--theme-glow-raw, transparent)); transition: filter 2s ease; }
   @media (orientation: landscape) { #pause-overlay .ps-disc { display: block; } } @media (orientation: portrait) { #pause-overlay .ps-disc { display: none !important; } }
-  #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${fontOp}); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: ${fontWt}; line-height: 1; letter-spacing: ${tracking}em; text-transform: uppercase; background: rgba(0,0,0,${exposure}); border: 1px solid rgba(255,255,255,${lightInt * 0.18}); box-shadow: inset 0 1px 0.5px rgba(255,255,255,${lightInt * 0.22}), inset 0 -1px ${depth * 0.15}px rgba(0,0,0,${depth * 0.012}), 0 4px 16px rgba(0,0,0,0.18); -webkit-backdrop-filter: blur(${frost}px) saturate(110%); backdrop-filter: blur(${frost}px) saturate(110%); filter: url(#ps-glass-refraction); }
-  #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${fontOp}); text-shadow: 0 1px 3px rgba(0,0,0,0.42), 0 0 8px rgba(0,0,0,0.18); }
-  #pause-overlay .ps-paused-badge::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; background: linear-gradient(${lightAngle}deg, rgba(255,255,255,${lightInt}) 0%, rgba(255,255,255,${lightInt * 0.5}) ${lightFadeStop}%, transparent ${splayStop}%); mix-blend-mode: overlay; opacity: 0.7; }
-  #pause-overlay .ps-paused-badge::after { content: ""; position: absolute; inset: -${dispPx}px; z-index: 2; border-radius: inherit; pointer-events: none; background: linear-gradient(${lightAngle + 90}deg, rgba(255,80,80,${dispOp}) 0%, transparent 30%, transparent 70%, rgba(80,200,255,${dispOp}) 100%); mix-blend-mode: screen; opacity: ${dispOp}; }
-  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pause-overlay .ps-paused-badge { background: rgba(12,15,18,0.72); filter: none; } }
-  #pause-overlay .ps-paused-badge-landscape { left: 50%; top: var(--pause-badge-top, 62%); transform: translate(-50%, -50%); width: min(var(--pause-badge-landscape-width, 280px), 100%); max-width: 100%; aspect-ratio: 3.45 / 1; height: auto; padding: 0 1.1em; font-size: clamp(24px, 2.05vw, 68px); }
-  #pause-overlay .ps-paused-badge-portrait { left: 50%; bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(var(--pause-badge-portrait-width, 260px), calc(100vw - 32px)); max-width: calc(100vw - 32px); aspect-ratio: 3.35 / 1; height: auto; padding: 0 0.95em; font-size: clamp(28px, 3vw, 52px); }
+  #pause-overlay .ps-paused-badge { display: none; position: absolute; align-items: center; justify-content: center; z-index: 4; pointer-events: auto; user-select: none; touch-action: manipulation; overflow: hidden; isolation: isolate; contain: paint; border-radius: 999px; white-space: nowrap; color: rgba(255,255,255,${fontOpacity}); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: ${fontWeight}; line-height: 1; letter-spacing: ${trackingEm}em; text-transform: uppercase; background: rgba(255,255,255,${glassTint}); border: 1px solid rgba(255,255,255,${borderOpacity}); box-shadow: 0 2px 16px rgba(0,0,0,0.12); -webkit-backdrop-filter: blur(${frost}px) brightness(${glassBrightness}) saturate(${glassSaturation}); backdrop-filter: blur(${frost}px) brightness(${glassBrightness}) saturate(${glassSaturation}); }
+  #pause-overlay .ps-paused-badge-text { position: relative; z-index: 3; color: rgba(255,255,255,${fontOpacity}); text-shadow: 0 1px 3px rgba(0,0,0,0.30); }
+  #pause-overlay .ps-paused-badge::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; background: linear-gradient(${lightAngle}deg, rgba(255,255,255,${lightIntensity}) 0%, rgba(255,255,255,${0.4*lightIntensity}) ${lightFadeStop}%, transparent ${splayStop}%); }
+  #pause-overlay .ps-paused-badge::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; box-shadow: inset ${igBotX}px ${igBotY}px ${igBotBlur}px ${igBotSpread}px rgba(${igBotColor},${igBotOp}), inset ${igTopX}px ${igTopY}px ${igTopBlur}px ${igTopSpread}px rgba(${igBotColor},${igTopOp}), inset 0 1px 0 rgba(255,255,255,${rimHighlightOpacity}); }
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pause-overlay .ps-paused-badge { background: rgba(180,185,190,0.42); } }
+  #pause-overlay .ps-paused-badge-landscape { left: 50%; top: var(--pause-badge-top, 50%); transform: translate(-50%, -50%); width: var(--pause-badge-landscape-width, 220px); max-width: 100%; height: var(--pause-badge-landscape-height, 64px); padding: 0 1.1em; font-size: clamp(${16+fontSizeOffsetPx}px, 1.5vw, ${48+fontSizeOffsetPx}px); }
+  #pause-overlay .ps-paused-badge-portrait { left: 50%; bottom: calc(12vh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: var(--pause-badge-portrait-width, 220px); max-width: calc(100vw - 32px); height: var(--pause-badge-portrait-height, 64px); padding: 0 0.95em; font-size: clamp(${20+fontSizeOffsetPx}px, 2.5vw, ${40+fontSizeOffsetPx}px); }
   @supports (height: 100dvh) { #pause-overlay .ps-paused-badge-portrait { bottom: calc(12dvh + env(safe-area-inset-bottom, 0px)); } }
   @media (orientation: landscape) { #pause-overlay .ps-paused-badge-landscape { display: flex; } #pause-overlay .ps-paused-badge-portrait { display: none !important; } }
   @media (orientation: portrait) { #pause-overlay .ps-paused-badge-landscape { display: none !important; } #pause-overlay .ps-paused-badge-portrait { display: flex; } }
