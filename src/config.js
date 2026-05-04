@@ -7,7 +7,7 @@ export const CONFIG = {
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
-  mouseShowDelay: 1000,           // Time (ms) after movement to show mouse again
+  mouseShowDelay: 2000,           // Time (ms) after movement to show mouse again
   prefetchDelayMs: 1000,          // Delay (ms) before fetching metadata to allow native OSD to load
 
   // KEYBOARD SEEK
@@ -29,7 +29,7 @@ export const CONFIG = {
   // DYNAMIC THEME
   enableThemeColor: true,         // Toggle dominant color extraction for the progress bar
   themeBrightnessBoost: 0.25,     // Increases lightness of theme color (0.0 to 1.0)
-  themeSaturationBoost: 0.75,     // Increases saturation of theme color (0.0 to 1.0)
+  themeSaturationBoost: 0.65,     // Increases saturation of theme color (0.0 to 1.0)
 
   // BACKDROP
   backdropBrightness: 0.60,       // Background image brightness (0.0 = black, 1.0 = original)
@@ -65,13 +65,13 @@ export const CONFIG = {
     lightAngleDeg: 135,
     lightIntensity: 0.15,
     splayPct: 55,
-    fontOpacity: 0.65,
+    fontOpacity: 0.5,
     trackingEm: 0.05,
     fontWeight: 400,
     fontSizeOffsetPx: -4,
     landscapeTopPct: 50,
     landscapeWidthPctOfDisc: 40,
-    landscapeHeightPctOfDisc: 11.5,
+    landscapeHeightPctOfDisc: 10,
     portraitPhoneWidthPct: 36,
     portraitPhoneHeightPctOfVW: 10.7,
     portraitTabletWidthPct: 24,
@@ -94,7 +94,7 @@ export const CONFIG = {
   enableTextShadow: true,         // Toggle the global text dropshadow
   textShadowDefinition: "0 2px 4px rgba(0,0,0,0.7), 0 0 16px rgba(0,0,0,0.75)", // CSS shadow syntax
   landscapeColumns: {
-    left: 5.45,                   // Relative width of the landscape text/logo column
+    left: 5.25,                   // Relative width of the landscape text/logo column
     right: 2.55,                  // Relative width of the landscape disc column
   },
 
@@ -105,7 +105,7 @@ export const CONFIG = {
       episode: '1.7vw',
       meta: '1.1vw',
       ratingBadge: '0.95vw',
-      synopsis: '2.2vw',
+      synopsis: '2vw',
       progressMeta: '1vw',
     },
     phonePortrait: {
@@ -121,7 +121,7 @@ export const CONFIG = {
       episode: '3vw',
       meta: '2.2vw',
       ratingBadge: '1.8vw',
-      synopsis: '4.2vw',
+      synopsis: '4vw',
       progressMeta: '2vw',
     },
     phoneLandscape: {
@@ -137,12 +137,12 @@ export const CONFIG = {
       episode: '2vw',
       meta: '1.4vw',
       ratingBadge: '1.1vw',
-      synopsis: '3.2vw',
+      synopsis: '3vw',
       progressMeta: '1.2vw',
     },
     largeScreen: {
       title: '2.6vw',
-      synopsis: '2.1vw',
+      synopsis: '2vw',
     },
   },
 
@@ -158,7 +158,7 @@ export const CONFIG = {
 
     scroll: {
       linesPerSecond: 0.2,        // Speed of the auto-scroll
-      initialHoldMs: 5000,        // Time (ms) to wait before starting to scroll
+      initialHoldMs: 10000,        // Time (ms) to wait before starting to scroll
       scrollRampMs: 800,          // Duration (ms) of the acceleration phase
       scrollResumeRampMs: 2000,   // Time (ms) to return to auto-scroll after manual touch
     },
