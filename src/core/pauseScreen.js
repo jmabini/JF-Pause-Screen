@@ -80,6 +80,7 @@ export function initPauseScreen(bootObserver) {
   let currentScrollY = 0;
   let manualScrollEndTime = 0;
   let hasStartedPlaying = false;
+  let forceMouseReturnPending = false;
 
   // --- IDLE SCREENSAVER STATE ---
   let idleTimer = null, isScreensaver = false;
@@ -680,6 +681,7 @@ export function initPauseScreen(bootObserver) {
   function showOverlay() {
     if (isOverlayVisible) return;
     isOverlayVisible = true;
+    forceMouseReturnPending = false;
     const auth = getAuth();
     const freshId = getItemId(video);
     
@@ -730,13 +732,17 @@ export function initPauseScreen(bootObserver) {
   let lastPointerX = -1;
   let lastPointerY = -1;
 
-  function triggerActivityHide({ ignoreOsdHover = false } = {}) {
+  function triggerActivityHide({ ignoreOsdHover = false, forceReturn = false } = {}) {
+    if (forceReturn) forceMouseReturnPending = true;
     hideOverlay();
     clearTimeout(mouseTimer);
     
     function attemptShow() {
       // If no longer paused or bound, stop retrying
-      if (!video || !video.paused) return;
+      if (!video || !video.paused) {
+        forceMouseReturnPending = false;
+        return;
+      }
 
       // Prevent showing if a native dialog or menu is actively open
       const isBlockingElementOpen = BLOCKING_ELEMENT_SELECTORS.some(sel => {
@@ -752,7 +758,7 @@ export function initPauseScreen(bootObserver) {
 
       // Check if native OSD is hovered (mouse is over controls)
       const osdHovered = document.querySelector('.videoOsdBottom:hover, .osdControls:hover, .header-player:hover');
-      if (osdHovered && !ignoreOsdHover) {
+      if (osdHovered && !ignoreOsdHover && !forceMouseReturnPending) {
         mouseTimer = setTimeout(attemptShow, 500);
         return;
       }
@@ -777,13 +783,13 @@ export function initPauseScreen(bootObserver) {
 
     // Wake screensaver on any real mouse movement
     if (isScreensaver) {
-      triggerActivityHide({ ignoreOsdHover: true });
+      triggerActivityHide({ ignoreOsdHover: true, forceReturn: true });
       return;
     }
     resetIdleTimer();
 
     if (Date.now() - lastPauseTime < CONFIG.mouseHideDelay) return;
-    triggerActivityHide();
+    triggerActivityHide({ forceReturn: true });
   }
 
   function onWheel(e) {
@@ -832,7 +838,7 @@ export function initPauseScreen(bootObserver) {
     applyThemeColor(overlay, null);
   }
 
-  function resetOverlayState() { stopScrollAnimation(); detachScrollDOM(); clearTimeout(mouseTimer); clearTimeout(touchReadyTimer); touchResumeReady = false; isOverlayVisible = false; isDismissed = false; overlay.style.setProperty('display', 'none', 'important'); overlay.style.setProperty('opacity', '0', 'important'); }
+  function resetOverlayState() { stopScrollAnimation(); detachScrollDOM(); clearTimeout(mouseTimer); clearTimeout(touchReadyTimer); touchResumeReady = false; forceMouseReturnPending = false; isOverlayVisible = false; isDismissed = false; overlay.style.setProperty('display', 'none', 'important'); overlay.style.setProperty('opacity', '0', 'important'); }
   function purge() { resetFetchState(); resetDOMContent(); resetOverlayState(); }
 
   // --- CHAPTER TICKS ---
@@ -1046,6 +1052,7 @@ export function initPauseScreen(bootObserver) {
   function onPlay() {
     hasStartedPlaying = true;
     clearTimeout(pauseShowTimer); pauseShowTimer = null;
+    forceMouseReturnPending = false;
     hideOverlay(); clearTimeout(mouseTimer);
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('wheel', onWheel);
