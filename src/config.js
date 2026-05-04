@@ -56,7 +56,7 @@ export const CONFIG = {
   blobCacheMaxSize: 20,           // Max number of processed images to keep in memory
 
   pauseBadge: {
-    frostBlurPx: 3,
+    frostBlurPx: 4,
     glassTint: 0.05,
     glassBrightness: 1,
     glassSaturation: 1,
@@ -157,7 +157,7 @@ export const CONFIG = {
     descenderGuardPx: 24,         // Extra space (px) at bottom to prevent letter clipping
 
     scroll: {
-      linesPerSecond: 0.2,        // Speed of the auto-scroll
+      linesPerSecond: 0.13,        // Speed of the auto-scroll
       initialHoldMs: 10000,        // Time (ms) to wait before starting to scroll
       scrollRampMs: 800,          // Duration (ms) of the acceleration phase
       scrollResumeRampMs: 2000,   // Time (ms) to return to auto-scroll after manual touch
