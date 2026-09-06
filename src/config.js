@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '4.1.0',
+  version: '4.1.1',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -42,10 +42,17 @@ export const CONFIG = {
 
   // BACKDROP DELIVERY SIZE (server-side resize; backdrops are the bulk of network use)
   backdropSizing: true,           // Ask the server for a backdrop matched to the player, not the original
-  backdropQuality: 90,            // JPEG quality (1-100) for server-resized backdrops
+  backdropQuality: 90,            // Do NOT lower this. Jellyfin treats quality >= 90 as "default", so a
+                                  // request at/above the source width passes through untouched. At 89 or
+                                  // below, EVERY image forces a server-side decode+re-encode and a new
+                                  // 30-day cache file, including ones that needed no resizing at all.
   backdropQuantizePx: 160,        // Round the requested width up to this step (stable cache keys while resizing)
   backdropMaxWidthPx: 3840,       // Never request wider than this, whatever the display reports (4K cap)
-  backdropMaxDpr: 2,              // Cap device-pixel-ratio scaling (3x phones gain nothing visible here)
+  backdropMaxDpr: 1.5,            // Pixel-density cap. This is the one knob that decides whether hi-DPI
+                                  // screens save anything: at 2.0 a retina laptop, iPad or phone asks for
+                                  // >= its source width and saves nothing. At 1.5 every display still gets
+                                  // 1.5x its own pixels, on a backdrop dimmed to backdropBrightness and
+                                  // vignetted — the difference is not visible, the bytes are.
   backdropAspect: 16 / 9,         // Assumed backdrop aspect, used to size for CSS `cover` in portrait
 
   // TOUCH BEHAVIOUR  

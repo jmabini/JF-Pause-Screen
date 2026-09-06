@@ -5,6 +5,14 @@ import { initPauseScreen } from './core/pauseScreen.js';
   let instance = null;
   let bootDebounce = null;
 
+  // Re-entry guard. createOverlay() has no #pause-overlay check, so a double injection would stack
+  // two overlays and two MutationObservers on the same page — and the diagnostics below would
+  // cheerfully report the second copy as healthy.
+  if (window.JFPauseScreen) {
+    console.warn(`[PauseScreen] v${CONFIG.version} not started — v${window.JFPauseScreen.version} is already running (double injection).`);
+    return;
+  }
+
   // Diagnostics. Without a marker, "the script never arrived" and "the script arrived but never
   // booted" are indistinguishable on a TV or a phone — which is exactly the failure that is
   // expensive to diagnose remotely. Defined immediately, so its mere presence proves delivery.

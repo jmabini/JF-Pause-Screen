@@ -535,10 +535,12 @@ export function initPauseScreen(bootObserver) {
     if (itemCache.has(itemId)) { data = itemCache.get(itemId); }
     else {
       try {
-        // userId is sent explicitly: /Items/{id} resolves a user context from the token, and any
-        // token without one (API key, service token) answers 400 rather than the item.
-        const userQuery = auth.userId ? `?userId=${encodeURIComponent(auth.userId)}` : '';
-        const resp = await fetch(`/Items/${itemId}${userQuery}`, { signal: fetchAbort.signal, headers: authHeaders });
+        // Deliberately NO ?userId= here. Jellyfin's RequestHelpers.GetUserId falls back to the
+        // token's own user when the parameter is absent (always correct), but throws
+        // SecurityException("Forbidden") when a supplied userId belongs to someone else and the
+        // caller is not an admin. Our stored userId is the *last* user recorded for this server,
+        // so on a shared device it can be stale — passing it turns a working 200 into a 403.
+        const resp = await fetch(`/Items/${itemId}`, { signal: fetchAbort.signal, headers: authHeaders });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const jsonText = await resp.text();
         data = await directorRequest('parseMetadata', { jsonText }, fetchAbort.signal);
@@ -717,7 +719,12 @@ export function initPauseScreen(bootObserver) {
     forceMouseReturnPending = false;
     const auth = getAuth();
     const freshId = getItemId(video);
-    
+
+    // Nothing to render and nothing rendered earlier: the overlay's own backdrop is opaque black,
+    // so showing it here would paint a blank panel over the video that also swallows clicks.
+    // Staying hidden leaves the player exactly as it was.
+    if (!auth && !currentItemId) { isOverlayVisible = false; return; }
+
     if (auth && freshId) {
       fetchAndApplyMetadata(freshId, auth).catch(err => {
         if (err.name !== 'AbortError') console.error('[PauseScreen] Overlay fetch failed:', err);
