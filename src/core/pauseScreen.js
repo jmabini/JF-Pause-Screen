@@ -345,10 +345,32 @@ export function initPauseScreen(bootObserver) {
     return null;
   }
 
+  // Images that get painted full-screen behind the overlay. Logo/Disc are left alone on purpose:
+  // they carry alpha, and the worker's crop scans that alpha (CONFIG.logoCropAlphaThreshold).
+  const SIZED_IMAGE_TYPES = new Set(['Backdrop', 'Thumb', 'Primary']);
+
+  // Width needed to `cover` the player viewport, quantized so a resize does not churn the blob cache.
+  function backdropRequestWidth() {
+    const dpr = Math.min(window.devicePixelRatio || 1, CONFIG.backdropMaxDpr || 2);
+    const vw = (window.innerWidth || 1920) * dpr;
+    const vh = (window.innerHeight || 1080) * dpr;
+    // In portrait, height is the binding dimension for `cover`, so a screen-width request is far too small.
+    const needed = Math.max(vw, vh * (CONFIG.backdropAspect || 16 / 9));
+    const step = CONFIG.backdropQuantizePx || 160;
+    const quantized = Math.ceil(needed / step) * step;
+    return Math.max(step, Math.min(quantized, CONFIG.backdropMaxWidthPx || 3840));
+  }
+
   function imageUrl(itemId, imageType, index = null, tag = '') {
     const indexPath = index === null ? '' : `/${index}`;
-    const tagQuery = tag ? `?tag=${tag}` : '';
-    return `/Items/${itemId}/Images/${imageType}${indexPath}${tagQuery}`;
+    const params = [];
+    if (tag) params.push(`tag=${tag}`);
+    if (CONFIG.backdropSizing && SIZED_IMAGE_TYPES.has(imageType)) {
+      // maxWidth never upscales, so a small source still costs only what it is.
+      params.push(`maxWidth=${backdropRequestWidth()}`);
+      if (CONFIG.backdropQuality) params.push(`quality=${CONFIG.backdropQuality}`);
+    }
+    return `/Items/${itemId}/Images/${imageType}${indexPath}${params.length ? `?${params.join('&')}` : ''}`;
   }
 
   function getLogoUrls(itemId, seriesId, parentId) {
@@ -443,9 +465,12 @@ export function initPauseScreen(bootObserver) {
         server.Url,
         server.ServerUrl
       ].some(address => getOrigin(address) === currentOrigin);
-      const server = servers.find(s => s.AccessToken && serverMatchesCurrentHost(s))
-        || servers.find(s => s.AccessToken)
-        || servers[0];
+      const withToken = servers.filter(s => s.AccessToken);
+      // Fail closed. Falling back to "any stored token" would send server B's bearer token to
+      // server A's origin whenever host matching misses (VPN/proxy hostname, IP vs DNS name).
+      // A lone server is unambiguous, so it stays usable; two or more require a real host match.
+      const server = withToken.find(serverMatchesCurrentHost)
+        || (withToken.length === 1 ? withToken[0] : null);
       if (server?.AccessToken) return { token: server.AccessToken, userId: server.UserId || '' };
     } catch (err) { console.warn('[PauseScreen] Auth read error:', err); }
     return null;
@@ -510,7 +535,10 @@ export function initPauseScreen(bootObserver) {
     if (itemCache.has(itemId)) { data = itemCache.get(itemId); }
     else {
       try {
-        const resp = await fetch(`/Items/${itemId}`, { signal: fetchAbort.signal, headers: authHeaders });
+        // userId is sent explicitly: /Items/{id} resolves a user context from the token, and any
+        // token without one (API key, service token) answers 400 rather than the item.
+        const userQuery = auth.userId ? `?userId=${encodeURIComponent(auth.userId)}` : '';
+        const resp = await fetch(`/Items/${itemId}${userQuery}`, { signal: fetchAbort.signal, headers: authHeaders });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const jsonText = await resp.text();
         data = await directorRequest('parseMetadata', { jsonText }, fetchAbort.signal);
@@ -541,9 +569,14 @@ export function initPauseScreen(bootObserver) {
     const isEpisode = data.Type === 'Episode', seriesId = data.SeriesId || null, parentId = data.ParentId || null;
     titleEl.textContent = isEpisode ? (data.SeriesName || data.Name) : data.Name;
     titleEl.style.setProperty('display', 'block', 'important');
-    if (isEpisode && data.Name) { 
-      episodeEl.textContent = `S${String(data.ParentIndexNumber).padStart(2, '0')} · E${String(data.IndexNumber).padStart(2, '0')} — ${data.Name}`; 
-      episodeEl.style.setProperty('display', 'block', 'important'); 
+    if (isEpisode && data.Name) {
+      // `!= null`, not truthiness: season 0 (specials) is real and must still render as S00.
+      // Live TV recordings and date-based episodes carry no numbers at all — omit rather than print "null".
+      const season = data.ParentIndexNumber != null ? `S${String(data.ParentIndexNumber).padStart(2, '0')}` : '';
+      const episode = data.IndexNumber != null ? `E${String(data.IndexNumber).padStart(2, '0')}` : '';
+      const label = [season, episode].filter(Boolean).join(' · ');
+      episodeEl.textContent = label ? `${label} — ${data.Name}` : data.Name;
+      episodeEl.style.setProperty('display', 'block', 'important');
     }
     metaYear.textContent = data.ProductionYear || ''; 
     metaRating.textContent = data.OfficialRating || ''; 

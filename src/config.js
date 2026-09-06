@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '3.13.1',
+  version: '4.1.0',
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
@@ -39,6 +39,14 @@ export const CONFIG = {
   preBlurSize: 128,               // Resolution (px) of low-res blur (performance optimization)
   preBlurPasses: 3,               // Blur strength (more passes = smoother, 3-5 is ideal)
   preBlurRadius: 20,              // Blur radius (px) for native canvas filter (10-40 range, higher = softer)
+
+  // BACKDROP DELIVERY SIZE (server-side resize; backdrops are the bulk of network use)
+  backdropSizing: true,           // Ask the server for a backdrop matched to the player, not the original
+  backdropQuality: 90,            // JPEG quality (1-100) for server-resized backdrops
+  backdropQuantizePx: 160,        // Round the requested width up to this step (stable cache keys while resizing)
+  backdropMaxWidthPx: 3840,       // Never request wider than this, whatever the display reports (4K cap)
+  backdropMaxDpr: 2,              // Cap device-pixel-ratio scaling (3x phones gain nothing visible here)
+  backdropAspect: 16 / 9,         // Assumed backdrop aspect, used to size for CSS `cover` in portrait
 
   // TOUCH BEHAVIOUR  
   pauseShowDelayTouchMs: 0,       // Extra delay (ms) for touch devices

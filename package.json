@@ -1,6 +1,6 @@
 {
   "name": "jf-custom-pause-screen",
-  "version": "3.13.1",
+  "version": "4.1.0",
   "description": "Custom Pause Screen for Jellyfin",
   "type": "module",
   "scripts": {

@@ -1,8 +1,30 @@
+import { CONFIG } from './config.js';
 import { initPauseScreen } from './core/pauseScreen.js';
 
 (function () {
   let instance = null;
   let bootDebounce = null;
+
+  // Diagnostics. Without a marker, "the script never arrived" and "the script arrived but never
+  // booted" are indistinguishable on a TV or a phone — which is exactly the failure that is
+  // expensive to diagnose remotely. Defined immediately, so its mere presence proves delivery.
+  window.JFPauseScreen = {
+    version: CONFIG.version,
+    status() {
+      const video = typeof instance?.getVideo === 'function' ? instance.getVideo() : null;
+      return {
+        version: CONFIG.version,
+        booted: !!instance,
+        boundToVideo: !!video,
+        paused: video ? video.paused : null,
+        overlayInDom: !!document.getElementById('pause-overlay'),
+        stylesInDom: !!document.getElementById('pause-overlay-style'),
+        playerContainer: !!document.querySelector('.videoPlayerContainer'),
+        videoElement: !!document.querySelector('.videoPlayerContainer video')
+      };
+    }
+  };
+  console.info(`[PauseScreen] v${CONFIG.version} loaded — run window.JFPauseScreen.status() to diagnose`);
 
   const bootObserver = new MutationObserver((mutations) => {
     const hasNodeChanges = mutations.some(m => m.addedNodes.length > 0 || m.removedNodes.length > 0);
