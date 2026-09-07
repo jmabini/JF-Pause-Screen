@@ -92,7 +92,19 @@ These would all ship silently if the port were done mechanically:
 | **B2** | `playbackManager.unpause()` returns **undefined** | `pbm:3991-3995` | Our code calls `video.play().catch()` at `:1036 :1203 :1224` → `TypeError` on **every resume**, and only on user interaction. Call the player directly or wrap in `Promise.resolve()`. |
 | **B3** | `playbackManager.seek()` can **resume playback** | routes via `changeStream`, `pbm:1647-1656` | Would dismiss the overlay on arrow-key seek. Use `player.currentTime(ms)`. Also avoid `seekRelative` — upstream temporal-dead-zone bug at `:1658-1666`. |
 | **B4** | mpv `currentTime()` is `undefined` before first tick, `null` after stop | `mpvVideoPlayer.js:83, :144, :247, :455` | `Math.floor(10000 * undefined)` = **NaN** → straight into clock text and a CSS width. Guard every read with `Number.isFinite()`. |
-| **B5** | `currentTime === 0` sentinels break | `getCurrentTicks` folds in `transcodingOffsetTicks` (`pbm:2248-2251`) | A transcoded stream is non-zero at position 0; a resumed item never *is* 0. Replace the five guards (`:773 :796 :1042 :1074 :1083`) with an explicit `hasStartedPlaying` flag driven by `playbackstart`. |
+| **B5** | `currentTime === 0` sentinels break **on the façade** | mpv has no meaningful zero position; a resumed item never *is* 0 | Replace the five guards (`:773 :796 :1042 :1074 :1083`) with an explicit `hasStartedPlaying` flag driven by `playbackstart` — **on the façade path only**. See the correction below. |
+
+> **Correction to B5 (v4.2.0, verified against this codebase).** The original rationale —
+> "a transcoded stream is non-zero at position 0, because `getCurrentTicks` folds in
+> `transcodingOffsetTicks` (`pbm:2248-2251`)" — is **false here**. That is `getCurrentTicks()`
+> behaviour, and this project has never called it (zero hits); the five guards read
+> `video.currentTime` on the raw element, which *is* 0 at the start of a transcode. The
+> change is still correct, on the two surviving reasons (a resumed item never reads 0, and
+> mpv has no reliable zero), but it must apply **only to the façade**: applying it to a real
+> `<video>` regressed the browser path (an autoplay-blocked page flashed a full opaque
+> overlay at position 0). The guards are therefore polymorphic on the target — the raw
+> `<video>` keeps its original sentinel verbatim. **The code comment at
+> `src/core/pauseScreen.js` (`isPauseScreenFacade`) is authoritative over this table.**
 | **B6** | Wrong veto target | `ExternalPlayerPlugin.js:3` = `window['ExtPlayer']` (instance); `window.ExternalPlayer` is the **native bridge** (`WebViewFragment.kt:190`) | Patching the bridge is a **silent no-op** — the worst failure mode. **Feature-detect the object shape; never trust a name.** |
 | **B7** | mpv position is cached at ~2 Hz | mpv `positionUpdate` cadence | A paused seek settles in ≤500 ms. Accept it; do not busy-poll. |
 

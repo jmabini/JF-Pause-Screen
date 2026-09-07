@@ -164,6 +164,15 @@ function isValidItemId(id) {
 }
 
 export function getItemId(video) {
+  // Route C item-id override (MASTER_PLAN_V2_UNIVERSAL.md §1). The captured
+  // `playbackstart` payload carries state.NowPlayingItem.Id directly — Live TV included —
+  // which matters because mpv populates neither the <video> poster attribute nor the OSD
+  // `data-id` buttons that the DOM derivation below scrapes. A raw <video> element has no
+  // `psItemId`, so the browser path falls straight through, unchanged. The id is still
+  // validated here, so a malformed payload cannot poison the request URL.
+  const overrideId = video?.psItemId;
+  if (isValidItemId(overrideId)) return overrideId;
+
   const candidates = [
     document.querySelector('.videoOsdBottom button[data-id]'),
     document.querySelector('.osdControls button[data-id]'),

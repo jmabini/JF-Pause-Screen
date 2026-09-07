@@ -16,6 +16,7 @@ import {
 } from '../services/image.js';
 import { getStyles } from '../ui/styles.js';
 import { createOverlay } from '../ui/elements.js';
+import { detectPlayerTarget } from '../services/players/detect.js';
 
 const VALID_ITEM_TYPES = new Set(['Movie', 'Episode', 'Video', 'MusicVideo', 'TvChannel', 'Program', 'Trailer', 'Audio']);
 const BLOCKING_ELEMENT_SELECTORS = ['.dialogContainer', '.actionSheet', '.upNextDialog', '.playerStats-content'];
@@ -52,6 +53,32 @@ const SCREENSAVER_LOGO_DELAY_MS = SCREENSAVER_ELEMENTS_FADE_MS + 500;
 
 function isInAnyZone(target, selectors) {
   return selectors.some(selector => target.closest(selector));
+}
+
+/**
+ * B5 / F2 — is the bound target a Route C façade rather than a real HTMLMediaElement?
+ *
+ * The five "has playback actually begun?" guards below are POLYMORPHIC on this, and that
+ * is not a style choice. v4.2.0's first cut replaced all five `currentTime === 0` /
+ * `!== 0` sentinels with the `hasStartedPlaying` flag in shared, ungated code, so the
+ * change went live on every browser with both flags off — exactly what spec §7 step 2
+ * forbids, and it broke two real cases:
+ *
+ *   - Autoplay blocked: play() fires the `play` event (flag := true), the promise
+ *     rejects, the element fires `pause` at position 0. The old sentinel suppressed that;
+ *     the flag did not, so a full opaque overlay flashed over the click-to-play state at
+ *     0% with no metadata. (The deleted comment read "Prevent flashing during auto-play
+ *     initialization" — it was load-bearing.)
+ *   - Mid-playback stream change (audio/subtitle/quality switch) fires loadstart on the
+ *     SAME element with no fresh `play` to follow; clearing the flag there killed
+ *     onPause/onPointerMove/onWheel/keyboard for the rest of that stream.
+ *
+ * So: on a real <video> the original sentinel is preserved VERBATIM at all five sites,
+ * and `hasStartedPlaying` is used only on the façade — where B5 actually applies, because
+ * mpv has no meaningful zero position and a resumed item never reports 0.
+ */
+function isPauseScreenFacade(target) {
+  return !!(target && target.__isPauseScreenFacade);
 }
 
 export function initPauseScreen(bootObserver) {
@@ -743,13 +770,21 @@ export function initPauseScreen(bootObserver) {
     
     if ((maxBackdropIndex === null || maxBackdropIndex > 1) && !backdropCycleTimer) cycleBackdrop(currentItemId);
     
-    requestAnimationFrame(() => { 
-      adjustLayout(); 
-      requestAnimationFrame(() => { 
-        overlay.style.visibility = 'visible'; 
-        void overlay.offsetHeight; 
-        overlay.style.setProperty('opacity', '1', 'important'); 
-      }); 
+    // R1 residual: both frames re-check isOverlayVisible. Anything that runs between
+    // scheduling and firing — purge()/resetOverlayState() from a media event, or an
+    // ordinary hideOverlay() from onPlay/triggerActivityHide — has already set
+    // display:none / opacity:0, and this chain would then paint visibility:visible and
+    // opacity:1 back on top of it. The later hideOverlay() early-returns on
+    // !isOverlayVisible, so those styles were never taken off again.
+    requestAnimationFrame(() => {
+      if (!isOverlayVisible) return;
+      adjustLayout();
+      requestAnimationFrame(() => {
+        if (!isOverlayVisible) return;
+        overlay.style.visibility = 'visible';
+        void overlay.offsetHeight;
+        overlay.style.setProperty('opacity', '1', 'important');
+      });
     });
     
     enableTouchResume();
@@ -810,7 +845,11 @@ export function initPauseScreen(bootObserver) {
   }
 
   function onPointerMove(e) {
-    if (e.pointerType === 'touch' || !video || !video.paused || video.currentTime === 0) return;
+    // B5/F2 sentinel site 1 of 5 — see isPauseScreenFacade(). The <video> branch is the
+    // pre-4.2.0 expression, unchanged. This function is high-churn: the last two shipped
+    // commits (aa5e774, 949f78e) were both bugfixes for it.
+    if (e.pointerType === 'touch' || !video || !video.paused ||
+        (isPauseScreenFacade(video) ? !hasStartedPlaying : video.currentTime === 0)) return;
 
     // Prevent micro-jitter from waking/hiding the screen constantly
     if (lastPointerX !== -1) {
@@ -833,7 +872,9 @@ export function initPauseScreen(bootObserver) {
   }
 
   function onWheel(e) {
-    if (!video || !video.paused || video.currentTime === 0) return;
+    // B5/F2 sentinel site 2 of 5.
+    if (!video || !video.paused ||
+        (isPauseScreenFacade(video) ? !hasStartedPlaying : video.currentTime === 0)) return;
     
     if (e.target.closest('.ps-synopsis')) {
       // Manual scroll: keep internal Y synced and pause auto-scroll
@@ -1079,7 +1120,9 @@ export function initPauseScreen(bootObserver) {
 
   function onPause() {
     if (!hasStartedPlaying) return; // Ignore pause events during initial load
-    if (video && video.currentTime === 0) return; // Prevent flashing during auto-play initialization
+    // B5/F2 sentinel site 3 of 5. Restored verbatim for a real <video>: this is the guard
+    // that stops an autoplay-blocked page flashing a full opaque overlay at position 0.
+    if (video && (isPauseScreenFacade(video) ? !hasStartedPlaying : video.currentTime === 0)) return; // Prevent flashing during auto-play initialization
 
     lastPauseTime = Date.now(); globalPauseTime = performance.now();
     clearTimeout(pauseShowTimer);
@@ -1100,6 +1143,15 @@ export function initPauseScreen(bootObserver) {
   function onEnded() { purge(); onPlay(); }
   function onSeeked() { if (isOverlayVisible && video && video.paused) updateProgress(); }
 
+  // F2: `loadstart` / `emptied` are wired straight to purge(), exactly as in v4.1.1.
+  // v4.2.0's first cut routed them through a wrapper that also cleared hasStartedPlaying,
+  // to "re-arm" the B5 flag. That was both a browser regression (a mid-playback stream
+  // change fires loadstart on the same element with no `play` to follow, so the flag
+  // stayed false and every guard went dead for that stream) and unnecessary: on the
+  // façade path the flag is true from bind onwards, because detectPlayerTarget() only
+  // ever returns a façade AFTER Route C has captured a live `playbackstart`. There is no
+  // window in which a façade is bound but playback has not begun, so nothing to re-arm.
+
 
   function onDocumentKeyDown(e) {
     if (e.key === 'Escape' && video) {
@@ -1111,7 +1163,11 @@ export function initPauseScreen(bootObserver) {
     if (isScreensaver) { exitScreensaver(); return; }
 
     // Arrow keys: seek ±N seconds and dismiss overlay
-    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && video && video.paused && video.currentTime !== 0) {
+    // B5/F2 sentinel site 4 of 5. The seek below is a plain currentTime write — on the
+    // façade that is a direct player.currentTime(ms) call, never playbackManager.seek(),
+    // which would resume playback (B3).
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && video && video.paused &&
+        (isPauseScreenFacade(video) ? hasStartedPlaying : video.currentTime !== 0)) {
       e.preventDefault();
       const secs = CONFIG.keyboardSeekSeconds || 10;
       video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + (e.key === 'ArrowRight' ? secs : -secs)));
@@ -1119,8 +1175,9 @@ export function initPauseScreen(bootObserver) {
       return;
     }
 
-    // Any other action key hides the overlay
-    if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key) && video && video.paused && video.currentTime !== 0) {
+    // Any other action key hides the overlay. B5/F2 sentinel site 5 of 5.
+    if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key) && video && video.paused &&
+        (isPauseScreenFacade(video) ? hasStartedPlaying : video.currentTime !== 0)) {
       triggerActivityHide();
     }
   }
@@ -1129,7 +1186,14 @@ export function initPauseScreen(bootObserver) {
 
   function bindVideo(el) {
     if (video === el) return; unbindVideo(); video = el; purge();
-    hasStartedPlaying = !el.paused; // Recognize already-playing video
+    // F2/F12. On a real <video> this stays `!el.paused`, byte-for-byte v4.1.1 — which
+    // also means the `el.paused && hasStartedPlaying` check at the end of this function
+    // remains dead on the browser path, exactly as it has always been. On the façade it
+    // must be true unconditionally: detectPlayerTarget() only hands back a façade after
+    // Route C captured a live `playbackstart`, so playback demonstrably HAS begun even
+    // when the item was resumed straight into a paused state — and that is precisely the
+    // case where the check below needs to fire and show the overlay.
+    hasStartedPlaying = isPauseScreenFacade(el) ? true : !el.paused;
     
     handleLoadedMetadata = () => {
       purge(); 
@@ -1152,9 +1216,9 @@ export function initPauseScreen(bootObserver) {
       prefetchRetryTimer = setTimeout(tryFetch, CONFIG.prefetchDelayMs || 1000);
     };
 
-    el.addEventListener('loadstart', purge); 
-    el.addEventListener('emptied', purge); 
-    el.addEventListener('ended', onEnded); 
+    el.addEventListener('loadstart', purge);
+    el.addEventListener('emptied', purge);
+    el.addEventListener('ended', onEnded);
     el.addEventListener('pause', onPause); 
     el.addEventListener('play', onPlay); 
     el.addEventListener('seeked', onSeeked);
@@ -1170,9 +1234,9 @@ export function initPauseScreen(bootObserver) {
 
   function unbindVideo() {
     if (!video) return;
-    video.removeEventListener('loadstart', purge); 
-    video.removeEventListener('emptied', purge); 
-    video.removeEventListener('ended', onEnded); 
+    video.removeEventListener('loadstart', purge);
+    video.removeEventListener('emptied', purge);
+    video.removeEventListener('ended', onEnded);
     video.removeEventListener('pause', onPause); 
     video.removeEventListener('play', onPlay); 
     video.removeEventListener('seeked', onSeeked);
@@ -1284,14 +1348,21 @@ export function initPauseScreen(bootObserver) {
     }
   }, { passive: true });
 
-  const existingVideo = document.querySelector('.videoPlayerContainer video');
-  if (existingVideo) bindVideo(existingVideo);
+  // detectPlayerTarget() returns the raw <video> element whenever one exists, so this is
+  // the same object this line has always bound. It only ever returns something else — a
+  // façade — when there is no <video> at all AND every kill switch is satisfied.
+  const existingTarget = detectPlayerTarget();
+  if (existingTarget) bindVideo(existingTarget);
 
   function destroy() {
     purge(); unbindVideo(); if (resizeObserver) resizeObserver.disconnect();
     exitScreensaver(); clearTimeout(idleTimer); idleTimer = null;
     clearTimeout(mouseTimer); clearTimeout(touchReadyTimer); clearTimeout(resizeDebounce); clearTimeout(pauseShowTimer); clearTimeout(dismissTimer); clearTimeout(userScrollTimeout);
-    document.removeEventListener('pointermove', onPointerMove); document.removeEventListener('touchstart', handleDismissTouch);
+    // R5: `wheel` is added in onPause alongside `pointermove` and was never removed here.
+    // Harmless in v4.1.1 because destroy() only ran when the <video> left the DOM; on the
+    // façade path destroy() now runs at every playbackstop, so stopping while paused
+    // leaked one wheel listener per stop for the life of the page.
+    document.removeEventListener('pointermove', onPointerMove); document.removeEventListener('wheel', onWheel); document.removeEventListener('touchstart', handleDismissTouch);
     overlay.removeEventListener('touchstart', onOverlayTouchStart); overlay.removeEventListener('touchend', onOverlayTouchEnd);
     imgBlobCache.clear(); itemCache.clear(); themeColorCache.clear(); overlay.remove();
     const styleTag = document.getElementById('pause-overlay-style');

@@ -20,6 +20,14 @@ PROJECT_CONTEXT.md
 
 dist/*.map
 
+# Contains live infrastructure detail — Tailscale address, LAN address, server name and
+# the installed-plugin inventory. This repo is public; none of it belongs there.
+LAUNCH_READINESS.md
+
+# Derived from the sources above: the knowledge graph indexes LAUNCH_READINESS.md, so
+# graph.json, graph.html, GRAPH_REPORT.md and the AST cache all carry the server name.
+graphify-out/
+
 # Optional: keep only if you want old versions and source art public
 Archive/
 ASSETS/

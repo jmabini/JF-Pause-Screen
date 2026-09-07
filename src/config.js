@@ -3,7 +3,34 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '4.1.1',
+  version: '4.2.0',
+
+  // UNIVERSAL PLAYER (Route C) — see MASTER_PLAN_V2_UNIVERSAL.md
+  // Everything below ships DEFAULT OFF. Nothing changes on install: with these values a
+  // browser executes exactly today's code path, and Desktop/Android behave exactly as
+  // they do today. Flip them only after the §6 device probe.
+  enableUniversalPlayer: false,   // Capture layer + player façade (Desktop mpv, and any
+                                  // future player with no <video>). false = never wrap
+                                  // Events.trigger, never build a façade.
+                                  // Runtime overrides, in priority order:
+                                  //   window.__PS_DISABLE = true
+                                  //   localStorage['jfPauseScreenDisableUniversal'] = '1'
+                                  //   3 caught throws (automatic, per session)
+
+  // Android only. Vetoes the ExoPlayer plugin instance so getPlayer() falls through to
+  // htmlVideoPlayer, which builds a real <video> and puts Android back on today's path.
+  //   'never'  — no veto at all. THIS RELEASE'S DEFAULT: nothing may change on install.
+  //   'auto'   — RECOMMENDED PRODUCTION VALUE per §3. Veto only when the WebView would
+  //              direct-play the item anyway (decided synchronously from
+  //              item.MediaSources[0]), so the overlay costs zero playback capability.
+  //   'always' — literal 100% coverage, at a transcoding cost: MKV, AC3 and probably
+  //              HEVC fall back to server remux/transcode, with higher battery use and
+  //              no native HDR/passthrough.
+  // A `playbackerror` auto-suspends the veto for that item in every mode (§3).
+  androidForceWebPlayer: 'never',
+  androidVetoExternalPlayer: false, // Also veto the "External player" plugin instance
+                                    // (window.ExtPlayer, priority -2 — it sorts AHEAD of
+                                    // ExoPlayer). Opt-in per §2.
 
   // GENERAL
   mouseHideDelay: 500,            // Time (ms) after pause to auto-hide mouse
