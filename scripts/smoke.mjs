@@ -194,6 +194,7 @@ if (!fs.existsSync(DIST)) {
       CONFIG.version,                             // the version bump
       'jfPauseScreenDisableUniversal',            // kill-switch layer 3 storage key
       'CONFIG.enableUniversalPlayer is false',    // kill-switch layer 1 reason string
+      'mouse',                                    // v4.3.3 nudgeJellyfinOsd(): synthetic pointerType (browser path)
       'true',                                     // layer 3 accepts '1' or 'true'
       'never',                                    // androidForceWebPlayer's default
       'undefined'                                 // typeof guards in the new modules

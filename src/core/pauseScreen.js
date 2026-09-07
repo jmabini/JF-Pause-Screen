@@ -726,6 +726,31 @@ export function initPauseScreen(bootObserver) {
     dismissTimer = setTimeout(restoreFromDismiss, CONFIG.touchDismissRestoreMs);
   }
 
+  // Jellyfin shows its OSD on pointer activity, but its handler ignores `touch` pointers on
+  // mobile, and we stop the X tap propagating anyway — so tapping the X could hide the
+  // overlay while the controls stayed hidden underneath. Ask for them the way a mouse
+  // would: `pointermove` with pointerType 'mouse', twice, ≥10px apart, because Jellyfin's
+  // first move only seeds its last-position record and the threshold is 10px. Dispatched
+  // from the player container so it bubbles through the OSD page and document alike, and
+  // our own onPointerMove drops it as untrusted. Fails quiet if PointerEvent is missing.
+  let osdNudgeSeq = 0;
+  function nudgeJellyfinOsd() {
+    if (typeof PointerEvent !== 'function' || typeof document === 'undefined') return;
+    const target = document.querySelector('.videoPlayerContainer') || document.body;
+    if (!target) return;
+    osdNudgeSeq = (osdNudgeSeq + 1) % 4;
+    const base = 20 + osdNudgeSeq * 40;
+    for (const offset of [0, 40]) {
+      const p = base + offset;
+      try {
+        target.dispatchEvent(new PointerEvent('pointermove', {
+          bubbles: true, cancelable: false, pointerType: 'mouse', pointerId: 1, isPrimary: true,
+          clientX: p, clientY: p, screenX: p, screenY: p
+        }));
+      } catch (_) { /* fail quiet: the overlay is already hidden, the X still did its job */ }
+    }
+  }
+
   function triggerDismiss(e) {
     if (e) { e.stopPropagation(); e.preventDefault(); }
     if (isDismissed) return;
@@ -734,6 +759,7 @@ export function initPauseScreen(bootObserver) {
     overlay.style.pointerEvents = 'none';
     document.addEventListener('touchstart', handleDismissTouch, { passive: true });
     handleDismissTouch();
+    nudgeJellyfinOsd();
   }
 
   function restoreFromDismiss() {
@@ -850,6 +876,11 @@ export function initPauseScreen(bootObserver) {
   }
 
   function onPointerMove(e) {
+    // A synthetic move is ours (nudgeJellyfinOsd) or another script's — never a hand on a
+    // mouse, so it must not trip the desktop mouse-return path below. Strict `=== false`:
+    // real browsers always define isTrusted; the test shim's events may not, and those
+    // must keep flowing.
+    if (e.isTrusted === false) return;
     // B5/F2 sentinel site 1 of 5 — see isPauseScreenFacade(). The <video> branch is the
     // pre-4.2.0 expression, unchanged. This function is high-churn: the last two shipped
     // commits (aa5e774, 949f78e) were both bugfixes for it.
