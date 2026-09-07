@@ -112,16 +112,39 @@ if (!fs.existsSync(DIST)) {
     // Only the version string may disappear. Anything else means browser-path text moved.
     ok('R6: no v4.1.1 string literal was removed except the version',
       removed.length === 1 && removed[0] === '"4.1.1"', removed);
-    // Everything new must be attributable to this release's new surface.
-    const ALLOWED_NEW = new Set([
-      '"4.2.0"',                                  // the version bump
-      '"jfPauseScreenDisableUniversal"',          // kill-switch layer 3 storage key
-      '"CONFIG.enableUniversalPlayer is false"',  // kill-switch layer 1 reason string
-      '"true"',                                   // layer 3 accepts '1' or 'true'
-      '"never"',                                  // androidForceWebPlayer's default
-      '"undefined"'                               // typeof guards in the new modules
+    // Everything new must be attributable to this release's new surface. What counts as
+    // "the new surface" depends on whether the feature actually shipped — with the flag
+    // off terser strips it and only a handful of guard strings survive, with it on the
+    // whole players/* vocabulary is legitimately present. Deriving the allowed set from
+    // the new SOURCE FILES rather than hardcoding it means this check keeps working when
+    // the flag flips, and still fails on a literal that came from nowhere.
+    const unquote = (s) => s.slice(1, -1);
+    const allowedContents = new Set([
+      CONFIG.version,                             // the version bump
+      'jfPauseScreenDisableUniversal',            // kill-switch layer 3 storage key
+      'CONFIG.enableUniversalPlayer is false',    // kill-switch layer 1 reason string
+      'true',                                     // layer 3 accepts '1' or 'true'
+      'never',                                    // androidForceWebPlayer's default
+      'undefined'                                 // typeof guards in the new modules
     ]);
-    const unexplained = added.filter(s => !ALLOWED_NEW.has(s));
+    // Mirror the code's real arming condition, not just the universal flag. The two flags
+    // strip independently: `enableUniversalPlayer: false` is a boolean terser can fold, so
+    // the façade goes — but `androidForceWebPlayer` is a STRING, so anything other than a
+    // folded-away comparison keeps the veto AND the capture layer (which arms for either
+    // feature) in the bundle. Keying this on the universal flag alone reported the veto's
+    // whole vocabulary as unexplained drift in an android-only build.
+    if (SHIPPED_UNIVERSAL === true || SHIPPED_ANDROID_MODE !== 'never') {
+      // Harvest every literal the new modules actually contain. A dist literal is
+      // attributable only if some new source file genuinely spells it.
+      for (const f of ['services/players/guard.js', 'services/players/detect.js',
+                       'services/players/facade.js', 'services/players/androidVeto.js']) {
+        const src = fs.readFileSync(new URL(f, SRC), 'utf8');
+        for (const lit of src.match(STRING_RE) || []) {
+          if (!lit.includes('${')) allowedContents.add(unquote(lit));
+        }
+      }
+    }
+    const unexplained = added.filter(s => !allowedContents.has(unquote(s)));
     ok('R6: every new string literal is attributable to the new surface', unexplained.length === 0, unexplained);
   }
 }

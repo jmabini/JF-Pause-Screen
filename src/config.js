@@ -3,13 +3,13 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '4.2.0',
+  version: '4.3.0',
 
   // UNIVERSAL PLAYER (Route C) — see MASTER_PLAN_V2_UNIVERSAL.md
   // Everything below ships DEFAULT OFF. Nothing changes on install: with these values a
   // browser executes exactly today's code path, and Desktop/Android behave exactly as
   // they do today. Flip them only after the §6 device probe.
-  enableUniversalPlayer: false,   // Capture layer + player façade (Desktop mpv, and any
+  enableUniversalPlayer: true,   // Capture layer + player façade (Desktop mpv, and any
                                   // future player with no <video>). false = never wrap
                                   // Events.trigger, never build a façade.
                                   // Runtime overrides, in priority order:
@@ -27,7 +27,7 @@ export const CONFIG = {
   //              HEVC fall back to server remux/transcode, with higher battery use and
   //              no native HDR/passthrough.
   // A `playbackerror` auto-suspends the veto for that item in every mode (§3).
-  androidForceWebPlayer: 'never',
+  androidForceWebPlayer: 'auto',
   androidVetoExternalPlayer: false, // Also veto the "External player" plugin instance
                                     // (window.ExtPlayer, priority -2 — it sorts AHEAD of
                                     // ExoPlayer). Opt-in per §2.
