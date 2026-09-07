@@ -35,8 +35,14 @@
 const RAF_QUEUE = [];
 let rafId = 0;
 
-/** Mime types the shim's <video> claims it can decode. Populated by installDomShim(). */
-const PLAYABLE_MIMES = new Set();
+/**
+ * What the shim's <video> claims it can decode. A PREDICATE, not a fixed set: the Android
+ * veto builds its MIME strings dynamically from the item, so an exact-string allowlist
+ * would make those tests tautologies (they would only pass for strings the test itself
+ * spelled out). Tests install a function that models a real engine's behaviour instead.
+ */
+let canPlayTypeImpl = () => '';
+export function setCanPlayType(fn) { canPlayTypeImpl = fn; }
 
 function makeStyle() {
   const props = new Map();
@@ -104,8 +110,8 @@ class El {
   getAttribute(name) { return this.attributes.has(name) ? this.attributes.get(name) : null; }
   setAttribute(name, value) { this.attributes.set(name, String(value)); }
 
-  /** Used by the Android veto's direct-play probe. Tests control PLAYABLE_MIMES. */
-  canPlayType(mime) { return PLAYABLE_MIMES.has(mime) ? 'probably' : ''; }
+  /** Used by the Android veto's direct-play probe. Tests control this via setCanPlayType. */
+  canPlayType(mime) { return canPlayTypeImpl(String(mime)); }
 
   get children() { return this.childNodes.filter(n => n instanceof El); }
 
@@ -256,9 +262,23 @@ function parseHTML(html) {
 }
 
 // ── Install ──────────────────────────────────────────────────────────────────────────
-export function installDomShim({ origin = 'http://localhost', credentials = null, playableMimes = [] } = {}) {
-  PLAYABLE_MIMES.clear();
-  for (const m of playableMimes) PLAYABLE_MIMES.add(m);
+/**
+ * Default UA. The Android veto has a PLATFORM GATE (F1) as of 4.3.1, so the shim has to
+ * declare a platform or every veto test would be gated out before it started. Android
+ * System WebView is the platform the veto exists for, so that is the default; tests that
+ * need another client reassign `window.navigator` (see UA_DESKTOP / UA_IPAD in smoke.mjs).
+ * Read off `window` rather than the bare global on purpose: node 21+ defines its own
+ * read-only `globalThis.navigator`, and in a real browser the two are the same object.
+ */
+export const UA_ANDROID_WEBVIEW =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) '
+  + 'Version/4.0 Chrome/152.0.0.0 Mobile Safari/537.36';
+
+export function installDomShim({
+  origin = 'http://localhost', credentials = null, canPlayType = null,
+  userAgent = UA_ANDROID_WEBVIEW
+} = {}) {
+  if (canPlayType) setCanPlayType(canPlayType);
   const documentElement = new El('html');
   const head = new El('head');
   const body = new El('body');
@@ -288,6 +308,7 @@ export function installDomShim({ origin = 'http://localhost', credentials = null
   globalThis.document = document;
   globalThis.window = {
     Events: globalThis.window?.Events,
+    navigator: { userAgent },
     innerWidth: 1920,
     innerHeight: 1080,
     devicePixelRatio: 1,

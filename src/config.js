@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '4.3.0',
+  version: '4.3.1',
 
   // UNIVERSAL PLAYER (Route C) — see MASTER_PLAN_V2_UNIVERSAL.md
   // Everything below ships DEFAULT OFF. Nothing changes on install: with these values a
