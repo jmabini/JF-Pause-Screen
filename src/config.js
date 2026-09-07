@@ -3,7 +3,7 @@
  * Everything you need to tweak is right here.
  */
 export const CONFIG = {
-  version: '4.3.1',
+  version: '4.3.2',
 
   // UNIVERSAL PLAYER (Route C) — see MASTER_PLAN_V2_UNIVERSAL.md
   // Everything below ships DEFAULT OFF. Nothing changes on install: with these values a
@@ -83,7 +83,9 @@ export const CONFIG = {
   backdropAspect: 16 / 9,         // Assumed backdrop aspect, used to size for CSS `cover` in portrait
 
   // TOUCH BEHAVIOUR  
-  pauseShowDelayTouchMs: 0,       // Extra delay (ms) for touch devices
+  pauseShowDelayTouchMs: 3000,    // Touch only: after a screen TAP pauses, leave Jellyfin's controls
+                                  // on screen this long before the overlay fades in. Pauses from the
+                                  // OSD button, a media key or a desktop click show immediately.
   dragThresholdPx: 10,            // Pixels moved before considering it a swipe instead of a tap
   touchResumeDelayMs: 300,        // Delay (ms) before allowing resume after interaction
   touchDismissRestoreMs: 5000,    // Time (ms) before auto-restoring UI after user dismissal

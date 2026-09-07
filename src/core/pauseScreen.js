@@ -50,6 +50,11 @@ const OVERLAY_PROTECTED_SELECTORS = [
 const CLICK_PROTECTED_SELECTORS = ['.ps-synopsis', ...OVERLAY_PROTECTED_SELECTORS];
 const SCREENSAVER_ELEMENTS_FADE_MS = 1500;
 const SCREENSAVER_LOGO_DELAY_MS = SCREENSAVER_ELEMENTS_FADE_MS + 500;
+// On touch, a tap on the video surface is the gesture that summons Jellyfin's controls —
+// and it is also the tap that pauses (ours, or Jellyfin's own handler on the same tap).
+// A `pause` landing inside this window after such a tap is treated as tap-initiated, and
+// the overlay waits CONFIG.pauseShowDelayTouchMs so the controls get the screen first.
+const TAP_PAUSE_WINDOW_MS = 400;
 
 function isInAnyZone(target, selectors) {
   return selectors.some(selector => target.closest(selector));
@@ -99,7 +104,7 @@ export function initPauseScreen(bootObserver) {
   let backdropCycleTimer = null;
   let isFallbackPrimary = false;
 
-  let touchStartX = 0, touchStartY = 0, touchResumeReady = false, touchReadyTimer = null;
+  let touchStartX = 0, touchStartY = 0, touchResumeReady = false, touchReadyTimer = null, lastScreenTapAt = 0;
   let scrollRAF = null, lastFrameTime = 0;
   let spacerEl = null, cloneEl = null, originalTextHTML = '';
   let isDismissed = false, dismissTimer = null, isOverlayVisible = false;
@@ -1115,10 +1120,18 @@ export function initPauseScreen(bootObserver) {
     const touchMoveX = Math.abs(e.changedTouches[0].clientX - globalTouchStartX), touchMoveY = Math.abs(e.changedTouches[0].clientY - globalTouchStartY);
     if (touchMoveX > CONFIG.dragThresholdPx || touchMoveY > CONFIG.dragThresholdPx) return;
     if (isOverlayVisible) { if (touchResumeReady) { hideOverlay(); video.play().catch(() => { }); } return; }
+    // A clean tap on the video surface. Record it BEFORE pausing: the `pause` event is
+    // queued, not synchronous, and if Jellyfin's own tap handler paused first then
+    // `video.paused` is already true here and our branch below never runs.
+    lastScreenTapAt = Date.now();
     if (!video.paused) { video.pause(); return; }
   }
 
   function onPause() {
+    // Consume the tap marker first, ahead of every early return, so a swallowed pause
+    // cannot leave it armed for the next unrelated one.
+    const tapPaused = Date.now() - lastScreenTapAt < TAP_PAUSE_WINDOW_MS;
+    lastScreenTapAt = 0;
     if (!hasStartedPlaying) return; // Ignore pause events during initial load
     // B5/F2 sentinel site 3 of 5. Restored verbatim for a real <video>: this is the guard
     // that stops an autoplay-blocked page flashing a full opaque overlay at position 0.
@@ -1126,7 +1139,11 @@ export function initPauseScreen(bootObserver) {
 
     lastPauseTime = Date.now(); globalPauseTime = performance.now();
     clearTimeout(pauseShowTimer);
-    const delay = CONFIG.pauseShowDelayTouchMs || 0;
+    // The tap that paused is also the tap that shows Jellyfin's controls: give them the
+    // screen first. The overlay follows unless playback resumes meanwhile — onPlay clears
+    // the timer and the timer re-checks `paused`. Any other pause (the OSD button, a media
+    // key, desktop) shows immediately, exactly as before.
+    const delay = tapPaused ? (CONFIG.pauseShowDelayTouchMs || 0) : 0;
     if (delay > 0) { pauseShowTimer = setTimeout(() => { if (video?.paused) showOverlay(); }, delay); } else { showOverlay(); }
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('wheel', onWheel, { passive: true });
